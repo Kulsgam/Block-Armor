@@ -49,6 +49,9 @@ final class BlockArmorTextures {
 
     static void validateAll() {
         if (!needsValidation) return;
+        // Client ticks begin while the initial resource reload is still baking models.
+        // Defer validation instead of treating that temporary null model as a missing texture.
+        if (Minecraft.getInstance().getBlockRenderer().getBlockModel(Blocks.STONE.defaultBlockState()) == null) return;
         needsValidation = false;
         for (ArmorSet set : ArmorSet.allSets) validate(set);
     }
@@ -80,6 +83,11 @@ final class BlockArmorTextures {
         BlockState state = armor.set.block.defaultBlockState();
         if (armor.set.block == Blocks.REDSTONE_LAMP) state = state.setValue(RedstoneLampBlock.LIT, true);
         var model = Minecraft.getInstance().getBlockRenderer().getBlockModel(state);
+        if (model == null) {
+            TextureAtlasSprite missing = Minecraft.getInstance().getModelManager()
+                    .getAtlas(TextureAtlas.LOCATION_BLOCKS).getSprite(MissingTextureAtlasSprite.getLocation());
+            return new Lookup(new Info(missing, -1), false);
+        }
         List<BakedQuad> quads = new ArrayList<>(model.getQuads(state, null, new Random(0)));
         for (Direction direction : Direction.values()) quads.addAll(model.getQuads(state, direction, new Random(0)));
         Direction wanted = switch (armor.getSlot()) {

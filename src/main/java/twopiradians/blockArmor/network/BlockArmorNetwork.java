@@ -37,4 +37,5 @@ public final class BlockArmorNetwork {
     public void sendCooldowns(ServerPlayer player) {
         ServerPlayNetworking.send(player, COOLDOWN_SYNC, SSyncCooldownsPacket.encode(player));
     }
+
 }

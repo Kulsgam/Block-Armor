@@ -14,7 +14,8 @@
   "environment": "*",
   "entrypoints": {
     "main": ["twopiradians.blockArmor.BlockArmorFabric"],
-    "client": ["twopiradians.blockArmor.client.BlockArmorFabricClient"]
+    "client": ["twopiradians.blockArmor.client.BlockArmorFabricClient"],
+    "modmenu": ["twopiradians.blockArmor.client.config.BlockArmorModMenu"]
   },
   "mixins": ["blockarmor.mixins.json"],
   "depends": {
@@ -22,5 +23,8 @@
     "fabric": ">=0.46.4+1.18",
     "minecraft": "1.18.1",
     "java": ">=17"
+  },
+  "suggests": {
+    "modmenu": ">=3.0.0"
   }
 }

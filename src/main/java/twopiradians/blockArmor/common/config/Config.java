@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Properties;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.stream.Collectors;
 import net.minecraft.network.FriendlyByteBuf;
 
@@ -105,6 +107,12 @@ public final class Config {
     }
 
     public static void reload() { load(); }
+
+    /** Persist the values currently applied to the live armor-set objects. */
+    public static synchronized void saveCurrent() {
+        save(loadedValues);
+        fabricFileExisted = true;
+    }
 
     public static boolean importWorldForgeConfig(net.minecraft.server.MinecraftServer server) {
         if (fabricFileExisted) return false;
@@ -210,17 +218,20 @@ public final class Config {
     }
 
     public static void readNetwork(FriendlyByteBuf buffer) {
-        piecesForSet = buffer.readVarInt();
-        effectsUseDurability = buffer.readBoolean();
-        globalToughnessModifier = buffer.readDouble();
-        globalEnchantabilityModifier = buffer.readDouble();
-        globalDamageReductionModifier = buffer.readDouble();
-        globalKnockbackResistanceModifier = buffer.readDouble();
-        globalDurabilityModifier = buffer.readDouble();
+        int decodedPieces = buffer.readVarInt();
+        if (decodedPieces < 1 || decodedPieces > 4) throw new IllegalArgumentException("Invalid set-effect threshold");
+        boolean decodedUsesDurability = buffer.readBoolean();
+        double decodedToughness = networkDecimal(buffer.readDouble(), "toughness modifier");
+        double decodedEnchantability = networkDecimal(buffer.readDouble(), "enchantability modifier");
+        double decodedReduction = networkDecimal(buffer.readDouble(), "damage-reduction modifier");
+        double decodedKnockbackModifier = networkDecimal(buffer.readDouble(), "knockback modifier");
+        double decodedDurabilityModifier = networkDecimal(buffer.readDouble(), "durability modifier");
         int count = buffer.readVarInt();
+        if (count < 0 || count > 10000) throw new IllegalArgumentException("Invalid armor-set count");
+        List<NetworkSetOptions> updates = new ArrayList<>(count);
         for (int i = 0; i < count; i++) {
-            String modid = buffer.readUtf(32767);
-            String registryName = buffer.readUtf(32767);
+            String modid = buffer.readUtf(256);
+            String registryName = buffer.readUtf(256);
             ArmorSet set = ArmorSet.allSets.stream()
                     .filter(candidate -> candidate.modid.equals(modid) && candidate.registryName.equals(registryName))
                     .findFirst().orElse(null);
@@ -231,22 +242,49 @@ public final class Config {
             int knockback = buffer.readVarInt();
             int enchantability = buffer.readVarInt();
             int effects = buffer.readVarInt();
-            java.util.ArrayList<SetEffect> decodedEffects = new java.util.ArrayList<>();
+            if (durability < 0 || reduction < 0 || !Float.isFinite(reduction) || toughness < 0 || !Float.isFinite(toughness)
+                    || knockback < 0 || enchantability < 0 || effects < 0 || effects > 128)
+                throw new IllegalArgumentException("Invalid options for " + modid + ":" + registryName);
+            ArrayList<SetEffect> decodedEffects = new ArrayList<>();
             for (int e = 0; e < effects; e++) {
-                SetEffect effect = SetEffect.getEffectFromString(buffer.readUtf(32767));
-                if (effect != null) decodedEffects.add(effect);
+                String encoded = buffer.readUtf(256);
+                SetEffect effect = SetEffect.getEffectFromString(encoded);
+                if (effect == null) throw new IllegalArgumentException("Unknown set effect " + encoded);
+                decodedEffects.add(effect);
             }
-            if (set != null) {
-                set.armorDurability = durability;
-                set.armorDamageReduction = reduction;
-                set.armorToughness = toughness;
-                set.armorKnockbackResistance = knockback;
-                set.armorEnchantability = enchantability;
-                set.setEffects.clear();
-                set.setEffects.addAll(decodedEffects);
-                set.createMaterial();
-                if (enabled) set.enable(); else set.disable();
-            }
+            updates.add(new NetworkSetOptions(set, enabled, durability, reduction, toughness, knockback, enchantability, decodedEffects));
+        }
+
+        // Apply only after the entire payload has passed validation.
+        piecesForSet = decodedPieces;
+        effectsUseDurability = decodedUsesDurability;
+        globalToughnessModifier = decodedToughness;
+        globalEnchantabilityModifier = decodedEnchantability;
+        globalDamageReductionModifier = decodedReduction;
+        globalKnockbackResistanceModifier = decodedKnockbackModifier;
+        globalDurabilityModifier = decodedDurabilityModifier;
+        for (NetworkSetOptions update : updates) {
+            ArmorSet set = update.set;
+            if (set == null) continue;
+            set.armorDurability = update.durability;
+            set.armorDamageReduction = update.reduction;
+            set.armorToughness = update.toughness;
+            set.armorKnockbackResistance = update.knockback;
+            set.armorEnchantability = update.enchantability;
+            set.setEffects.clear();
+            set.setEffects.addAll(update.effects);
+            set.createMaterial();
+            if (update.enabled) set.enable(); else set.disable();
         }
     }
+
+    private static double networkDecimal(double value, String name) {
+        if (!Double.isFinite(value) || value < 0D || value > 999999D)
+            throw new IllegalArgumentException("Invalid " + name);
+        return value;
+    }
+
+    private record NetworkSetOptions(ArmorSet set, boolean enabled, int durability, float reduction,
+                                     float toughness, int knockback, int enchantability,
+                                     ArrayList<SetEffect> effects) {}
 }

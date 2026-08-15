@@ -3,6 +3,7 @@ package twopiradians.blockArmor.client;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import twopiradians.blockArmor.client.key.KeyActivateSetEffect;
 import twopiradians.blockArmor.network.BlockArmorNetwork;
 import twopiradians.blockArmor.packet.SDevColorsPacket;
@@ -46,7 +47,17 @@ public final class BlockArmorFabricClient implements ClientModInitializer {
                                 new net.minecraft.network.FriendlyByteBuf(io.netty.buffer.Unpooled.wrappedBuffer(bytes)));
                     });
                 });
+        // Server sync is temporary client state. Restore this installation's local
+        // configuration after leaving a dedicated server.
+        ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> ConfigReload.restore(client));
         ClientProxy.setup();
+    }
+
+    private static final class ConfigReload {
+        static void restore(net.minecraft.client.Minecraft client) {
+            if (client.getSingleplayerServer() == null)
+                client.execute(twopiradians.blockArmor.common.config.Config::reload);
+        }
     }
 
     private static final class FriendlyByteBufCopy {
