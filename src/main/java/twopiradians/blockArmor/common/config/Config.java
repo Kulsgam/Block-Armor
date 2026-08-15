@@ -1,192 +1,252 @@
 package twopiradians.blockArmor.common.config;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Properties;
 import java.util.stream.Collectors;
+import net.minecraft.network.FriendlyByteBuf;
 
-import org.apache.commons.lang3.tuple.Pair;
-
-import com.google.common.collect.Maps;
-
-import net.minecraftforge.common.ForgeConfigSpec;
-import net.minecraftforge.common.ForgeConfigSpec.BooleanValue;
-import net.minecraftforge.common.ForgeConfigSpec.ConfigValue;
-import net.minecraftforge.common.ForgeConfigSpec.DoubleValue;
-import net.minecraftforge.common.ForgeConfigSpec.IntValue;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
-import net.minecraftforge.fml.event.config.ModConfigEvent;
+import net.fabricmc.loader.api.FabricLoader;
 import twopiradians.blockArmor.common.BlockArmor;
 import twopiradians.blockArmor.common.item.ArmorSet;
 import twopiradians.blockArmor.common.seteffect.SetEffect;
 
-@Mod.EventBusSubscriber(modid = BlockArmor.MODID, bus = EventBusSubscriber.Bus.MOD)
-public class Config {
+/**
+ * Server-side configuration. The simple key/value format deliberately keeps the
+ * old option names stable while avoiding a Forge configuration dependency.
+ */
+public final class Config {
+    private static final String CONFIG_VERSION = "1.1";
+    public static int piecesForSet = 2;
+    public static boolean effectsUseDurability = false;
+    public static double globalToughnessModifier = 1D;
+    public static double globalEnchantabilityModifier = 1D;
+    public static double globalDamageReductionModifier = 1D;
+    public static double globalKnockbackResistanceModifier = 1D;
+    public static double globalDurabilityModifier = 1D;
 
-	/**Change this to have {Set Effects} reset to default values*/
-	private static final double CONFIG_VERSION = 1.1D;
+    private static final Path FILE = FabricLoader.getInstance().getConfigDir().resolve("blockarmor.properties");
+    private static Properties loadedValues = new Properties();
+    private static boolean fabricFileExisted;
 
-	/** How many pieces of armor must be worn to activate set effects */
-	public static int piecesForSet;
-	/** Should items from disabled sets be registered */
-	/*** Sets that should not have items generated - only used by ModItems.postInit()*/
-	public static ArrayList<ArmorSet> disabledSets;
-	/** Should set effects use durability */
-	public static boolean effectsUseDurability;
-	public static double globalToughnessModifier;
-	public static double globalEnchantabilityModifier;
-	public static double globalDamageReductionModifier;
-	public static double globalKnockbackResistanceModifier;
-	public static double globalDurabilityModifier;
+    private Config() {}
 
-	public static ForgeConfigSpec SERVER_SPEC;
-	public static Server SERVER;
+    public static void load() {
+        Properties values = new Properties();
+        fabricFileExisted = Files.exists(FILE);
+        if (Files.exists(FILE)) {
+            try (var input = Files.newInputStream(FILE)) { values.load(input); }
+            catch (IOException exception) { BlockArmor.LOGGER.warn("Could not read {}", FILE, exception); }
+        }
+        if (!fabricFileExisted) importForgeToml(values, FabricLoader.getInstance().getConfigDir().resolve("blockarmor-server.toml"));
+        boolean oldVersion = fabricFileExisted && !CONFIG_VERSION.equals(values.getProperty("Config version"));
+        if (oldVersion) values.keySet().removeIf(key -> key.toString().endsWith(".Set_Effects"));
+        piecesForSet = integer(values, "Armor pieces required for Set Effects", 2, 1, 4);
+        effectsUseDurability = Boolean.parseBoolean(values.getProperty("Set Effects use durability", "false"));
+        if (!values.containsKey("Global Toughness Modifier") && values.containsKey("Global Tougness Modifier"))
+            values.setProperty("Global Toughness Modifier", values.getProperty("Global Tougness Modifier"));
+        globalToughnessModifier = decimal(values, "Global Toughness Modifier", 1D);
+        globalEnchantabilityModifier = decimal(values, "Global Enchantability Modifier", 1D);
+        globalDamageReductionModifier = decimal(values, "Global Damage Reduction Modifier", 1D);
+        globalKnockbackResistanceModifier = decimal(values, "Global Knockback Resistance Modifier", 1D);
+        globalDurabilityModifier = decimal(values, "Global Durability Modifier", 1D);
+        applyArmorSetOptions(values);
+        loadedValues = values;
+        save(values);
+    }
 
-	/**Init config - must be called after ArmorSet.setup()*/
-	public static ForgeConfigSpec init() {
-		final Pair<Server, ForgeConfigSpec> specPair = new ForgeConfigSpec.Builder().configure(Server::new);
-		SERVER_SPEC = specPair.getRight();
-		SERVER = specPair.getLeft();
-		return SERVER_SPEC;
-	}
+    private static int integer(Properties values, String key, int fallback, int min, int max) {
+        try { return Math.max(min, Math.min(max, Integer.parseInt(values.getProperty(key, String.valueOf(fallback))))); }
+        catch (NumberFormatException ignored) { return fallback; }
+    }
 
-	private static class ArmorSetOptions {
-		private ForgeConfigSpec.BooleanValue enabled;
-		private ConfigValue<List<? extends String>> setEffects;
-		private ConfigValue<Double> armorDamageReduction;
-		private ConfigValue<Integer> armorDurability;
-		private ConfigValue<Double> armorToughness;
-		private ConfigValue<Integer> armorKnockbackResistance;
-		private ConfigValue<Integer> armorEnchantability;
-	}
+    private static double decimal(Properties values, String key, double fallback) {
+        try { return Math.max(0D, Double.parseDouble(values.getProperty(key, String.valueOf(fallback)))); }
+        catch (NumberFormatException ignored) { return fallback; }
+    }
 
-	public static class Server {
+    private static void save(Properties existing) {
+        Properties output = new Properties();
+        output.putAll(existing);
+        output.setProperty("Config version", CONFIG_VERSION);
+        output.setProperty("Armor pieces required for Set Effects", String.valueOf(piecesForSet));
+        output.setProperty("Set Effects use durability", String.valueOf(effectsUseDurability));
+        output.setProperty("Global Toughness Modifier", String.valueOf(globalToughnessModifier));
+        output.setProperty("Global Enchantability Modifier", String.valueOf(globalEnchantabilityModifier));
+        output.setProperty("Global Damage Reduction Modifier", String.valueOf(globalDamageReductionModifier));
+        output.setProperty("Global Knockback Resistance Modifier", String.valueOf(globalKnockbackResistanceModifier));
+        output.setProperty("Global Durability Modifier", String.valueOf(globalDurabilityModifier));
 
-		/**Config options for each armor set*/
-		private static HashMap<ArmorSet, ArmorSetOptions> armorSetOptions = Maps.newHashMap();
-		private static IntValue piecesForSet; 
-		private static BooleanValue effectsUseDurability;
-		private static DoubleValue globalToughnessModifier;
-		private static DoubleValue globalEnchantabilityModifier;
-		private static DoubleValue globalDamageReductionModifier;
-		private static DoubleValue globalKnockbackResistanceModifier;
-		private static DoubleValue globalDurabilityModifier;
-		private static ConfigValue<Double> configVersion;
+        for (ArmorSet set : ArmorSet.allSets) {
+            String prefix = setPrefix(set);
+            output.setProperty(prefix + "Enabled", String.valueOf(set.isEnabled()));
+            output.setProperty(prefix + "Armor_Durability", String.valueOf(set.armorDurability));
+            output.setProperty(prefix + "Armor_Damage_Reduction", String.valueOf(set.armorDamageReduction));
+            output.setProperty(prefix + "Armor_Toughness", String.valueOf(set.armorToughness));
+            output.setProperty(prefix + "Armor_Knockback_Resistance", String.valueOf(set.armorKnockbackResistance));
+            output.setProperty(prefix + "Armor_Enchantability", String.valueOf(set.armorEnchantability));
+            output.setProperty(prefix + "Set_Effects", set.setEffects.stream()
+                    .map(SetEffect::writeToString).collect(Collectors.joining(";")));
+        }
+        try (var writer = Files.newBufferedWriter(FILE)) { output.store(writer, "Block Armor server settings"); }
+        catch (IOException exception) { BlockArmor.LOGGER.warn("Could not create {}", FILE, exception); }
+    }
 
-		private Server(ForgeConfigSpec.Builder builder) {
-			// config version
-			configVersion = builder.define("Config version - DO NOT CHANGE", CONFIG_VERSION);
-			// general
-			builder.comment("General settings");
-			builder.push("General");
-			//Armor pieces required to activate set effect
-			builder.comment("Specifies how many armor pieces must be worn for a set's effects to work.");
-			Server.piecesForSet = builder.defineInRange("Armor pieces required for Set Effects", 2, 1, 4);
-			//Should set effects use durability
-			builder.comment("Should Set Effects use durability of worn armor to work");
-			Server.effectsUseDurability = builder.define("Set Effects use durability", false);
-			builder.pop();
+    /** Applies the per-set options that were previously provided by ForgeConfigSpec. */
+    private static void applyArmorSetOptions(Properties values) {
+        for (ArmorSet set : ArmorSet.allSets) applyArmorSetOptions(set, values);
+    }
 
-			// armor stats
-			builder.comment("Settings that affect armor stats for all sets");
-			builder.push("Armor Stats");
-			builder.comment("Multiplied by armor's durability");
-			globalDurabilityModifier = builder.defineInRange("Global Durability Modifier", 1.0d, 0, 999999);
-			builder.comment("Multiplied by armor's damage reduction");
-			globalDamageReductionModifier = builder.defineInRange("Global Damage Reduction Modifier", 1.0d, 0, 999999);
-			builder.comment("Multiplied by armor's toughness");
-			globalToughnessModifier = builder.defineInRange("Global Tougness Modifier", 1.0d, 0, 999999);
-			builder.comment("Multiplied by armor's knockback resistance");
-			globalKnockbackResistanceModifier = builder.defineInRange("Global Knockback Resistance Modifier", 1.0d, 0, 999999);
-			builder.comment("Multiplied by armor's enchantability");
-			globalEnchantabilityModifier = builder.defineInRange("Global Enchantability Modifier", 1.0d, 0, 999999);
-			builder.pop();
+    /** Apply already-loaded settings to a set registered after this mod's initializer. */
+    public static void applyToLateSet(ArmorSet set) {
+        applyArmorSetOptions(set, loadedValues);
+        save(loadedValues);
+    }
 
-			// armor sets
-			builder.comment("Configure armor sets and their set effects");
-			builder.push("Armor_Sets");
-			for (String modid : ArmorSet.modidToSetMap.keySet()) {
-				builder.push(modid);
-				for (ArmorSet set : ArmorSet.modidToSetMap.get(modid)) {
-					ArmorSetOptions options = new ArmorSetOptions();
-					// they go in alphabetically here, but are not alphabetical in config for some reason..
-					builder.push(set.registryName);
-					// enabled
-					options.enabled = builder.define("Enabled", true);
-					// armor values
-					options.armorDurability = builder.define("Armor_Durability", set.armorDurability);
-					options.armorDamageReduction = builder.define("Armor_Damage_Reduction", (double) set.armorDamageReduction);
-					options.armorToughness = builder.define("Armor_Toughness", (double) set.armorToughness);
-					options.armorKnockbackResistance = builder.define("Armor_Knockback_Resistance", set.armorKnockbackResistance);
-					options.armorEnchantability = builder.define("Armor_Enchantability", set.armorEnchantability);
-					// Set Effects
-					options.setEffects = builder.defineList("Set_Effects", set.defaultSetEffects.stream().map(SetEffect::writeToString).collect(Collectors.toList()), 
-							(effect) -> SetEffect.getEffectFromString((String) effect) != null);
-					builder.pop();
-					Server.armorSetOptions.put(set, options);
-				}
-				builder.pop();
-			}
-			builder.pop();
-		}
+    public static void reload() { load(); }
 
-	}
+    public static boolean importWorldForgeConfig(net.minecraft.server.MinecraftServer server) {
+        if (fabricFileExisted) return false;
+        Path legacy = server.getWorldPath(net.minecraft.world.level.storage.LevelResource.ROOT)
+                .resolve("serverconfig/blockarmor-server.toml");
+        Properties values = new Properties();
+        if (!importForgeToml(values, legacy)) return false;
+        loadedValues.putAll(values);
+        applyGlobals(loadedValues);
+        applyArmorSetOptions(loadedValues);
+        save(loadedValues);
+        fabricFileExisted = true;
+        return true;
+    }
 
-	/**Read values from config*/
-	public static void sync() {
-		boolean oldVersion = Server.configVersion.get() != CONFIG_VERSION;
-		// pieces for set
-		Config.piecesForSet = Server.piecesForSet.get();
-		// effects use durability
-		Config.effectsUseDurability = Server.effectsUseDurability.get() == null ||
-				Server.effectsUseDurability.get();
-		// global armor stats
-		Config.globalDamageReductionModifier = Server.globalDamageReductionModifier.get();
-		Config.globalDurabilityModifier = Server.globalDurabilityModifier.get();
-		Config.globalEnchantabilityModifier = Server.globalEnchantabilityModifier.get();
-		Config.globalKnockbackResistanceModifier = Server.globalKnockbackResistanceModifier.get();
-		Config.globalToughnessModifier = Server.globalToughnessModifier.get();
-		for (ArmorSet set : ArmorSet.allSets) {
-			ArmorSetOptions options = Server.armorSetOptions.get(set);
-			// Enabled (wait until after items are registered to enable)
-			if (set.helmet != null) {
-				Boolean enabled = options.enabled.get();
-				if (enabled == null || enabled == true)
-					set.enable();
-				else
-					set.disable();
-			}
-			// armor values
-			set.armorDurability = options.armorDurability.get();
-			set.armorDamageReduction = options.armorDamageReduction.get().floatValue();
-			set.armorToughness = options.armorToughness.get().floatValue();
-			set.armorEnchantability = options.armorEnchantability.get();
-			set.armorKnockbackResistance = options.armorKnockbackResistance.get();
-			set.createMaterial();
-			// Set Effects
-			// change set effects to default if old config version
-			if (oldVersion)
-				options.setEffects.set(set.defaultSetEffects.stream().map(SetEffect::writeToString).collect(Collectors.toList()));
-			set.setEffects.clear();
-			for (String str : options.setEffects.get()) {
-				SetEffect effect = SetEffect.getEffectFromString(str);
-				if (effect != null)
-					set.setEffects.add(effect);
-				else
-					BlockArmor.LOGGER.warn("Invalid set effect in config for "+set.registryName+": "+str);
-			}
-		}
-		// update config version
-		if (oldVersion) 
-			Server.configVersion.set(CONFIG_VERSION);
-	}
+    private static void applyGlobals(Properties values) {
+        piecesForSet = integer(values, "Armor pieces required for Set Effects", piecesForSet, 1, 4);
+        effectsUseDurability = Boolean.parseBoolean(values.getProperty("Set Effects use durability", String.valueOf(effectsUseDurability)));
+        globalToughnessModifier = decimal(values, "Global Toughness Modifier", globalToughnessModifier);
+        globalEnchantabilityModifier = decimal(values, "Global Enchantability Modifier", globalEnchantabilityModifier);
+        globalDamageReductionModifier = decimal(values, "Global Damage Reduction Modifier", globalDamageReductionModifier);
+        globalKnockbackResistanceModifier = decimal(values, "Global Knockback Resistance Modifier", globalKnockbackResistanceModifier);
+        globalDurabilityModifier = decimal(values, "Global Durability Modifier", globalDurabilityModifier);
+    }
 
-	@SubscribeEvent
-	public static void onLoad(final ModConfigEvent configEvent) {
-		BlockArmor.LOGGER.info("Syncing config!");
-		sync();
-	}
+    /** Imports only the known Forge 2.6.9 TOML schema and leaves unknown keys untouched. */
+    private static boolean importForgeToml(Properties output, Path file) {
+        if (!Files.exists(file)) return false;
+        try {
+            String section = "";
+            for (String raw : Files.readAllLines(file)) {
+                String line = raw.strip();
+                if (line.isEmpty() || line.startsWith("#")) continue;
+                if (line.startsWith("[") && line.endsWith("]")) {
+                    section = line.substring(1, line.length()-1).replace("\"", "");
+                    continue;
+                }
+                int equals = line.indexOf('=');
+                if (equals < 0) continue;
+                String key = line.substring(0, equals).trim().replace("\"", "");
+                String value = line.substring(equals+1).trim();
+                if (value.startsWith("[") && value.endsWith("]")) {
+                    value = value.substring(1,value.length()-1).replace("\"", "").replace(",", ";").replace(" ", "");
+                } else value = value.replace("\"", "");
+                if (section.startsWith("Armor_Sets.")) output.setProperty(section + "." + key, value);
+                else if (key.startsWith("Config version")) output.setProperty("Config version", value);
+                else output.setProperty(key.equals("Global Tougness Modifier") ? "Global Toughness Modifier" : key, value);
+            }
+            BlockArmor.LOGGER.info("Imported legacy Forge Block Armor configuration from {}", file);
+            return true;
+        } catch (IOException exception) {
+            BlockArmor.LOGGER.warn("Could not import legacy Forge config {}", file, exception);
+            return false;
+        }
+    }
 
+    private static void applyArmorSetOptions(ArmorSet set, Properties values) {
+        String prefix = setPrefix(set);
+        set.armorDurability = integer(values, prefix + "Armor_Durability", set.armorDurability, 0, Integer.MAX_VALUE);
+        set.armorDamageReduction = (float) decimal(values, prefix + "Armor_Damage_Reduction", set.armorDamageReduction);
+        set.armorToughness = (float) decimal(values, prefix + "Armor_Toughness", set.armorToughness);
+        set.armorKnockbackResistance = integer(values, prefix + "Armor_Knockback_Resistance", set.armorKnockbackResistance, 0, Integer.MAX_VALUE);
+        set.armorEnchantability = integer(values, prefix + "Armor_Enchantability", set.armorEnchantability, 0, Integer.MAX_VALUE);
+        String effectList = values.getProperty(prefix + "Set_Effects", set.defaultSetEffects.stream()
+                .map(SetEffect::writeToString).collect(Collectors.joining(";")));
+        set.setEffects.clear();
+        for (String text : effectList.split(";")) {
+            if (text.isBlank()) continue;
+            SetEffect effect = SetEffect.getEffectFromString(text.trim());
+            if (effect != null) set.setEffects.add(effect);
+            else BlockArmor.LOGGER.warn("Invalid set effect '{}' for {}", text, set.registryName);
+        }
+        set.createMaterial();
+        boolean enabled = Boolean.parseBoolean(values.getProperty(prefix + "Enabled", "true"));
+        if (enabled) set.enable(); else set.disable();
+    }
+
+    private static String setPrefix(ArmorSet set) {
+        return "Armor_Sets." + set.modid + "." + set.registryName + ".";
+    }
+
+    public static void writeNetwork(FriendlyByteBuf buffer) {
+        buffer.writeVarInt(piecesForSet);
+        buffer.writeBoolean(effectsUseDurability);
+        buffer.writeDouble(globalToughnessModifier);
+        buffer.writeDouble(globalEnchantabilityModifier);
+        buffer.writeDouble(globalDamageReductionModifier);
+        buffer.writeDouble(globalKnockbackResistanceModifier);
+        buffer.writeDouble(globalDurabilityModifier);
+        buffer.writeVarInt(ArmorSet.allSets.size());
+        for (ArmorSet set : ArmorSet.allSets) {
+            buffer.writeUtf(set.modid);
+            buffer.writeUtf(set.registryName);
+            buffer.writeBoolean(set.isEnabled());
+            buffer.writeVarInt(set.armorDurability);
+            buffer.writeFloat(set.armorDamageReduction);
+            buffer.writeFloat(set.armorToughness);
+            buffer.writeVarInt(set.armorKnockbackResistance);
+            buffer.writeVarInt(set.armorEnchantability);
+            buffer.writeVarInt(set.setEffects.size());
+            for (SetEffect effect : set.setEffects) buffer.writeUtf(effect.writeToString());
+        }
+    }
+
+    public static void readNetwork(FriendlyByteBuf buffer) {
+        piecesForSet = buffer.readVarInt();
+        effectsUseDurability = buffer.readBoolean();
+        globalToughnessModifier = buffer.readDouble();
+        globalEnchantabilityModifier = buffer.readDouble();
+        globalDamageReductionModifier = buffer.readDouble();
+        globalKnockbackResistanceModifier = buffer.readDouble();
+        globalDurabilityModifier = buffer.readDouble();
+        int count = buffer.readVarInt();
+        for (int i = 0; i < count; i++) {
+            String modid = buffer.readUtf(32767);
+            String registryName = buffer.readUtf(32767);
+            ArmorSet set = ArmorSet.allSets.stream()
+                    .filter(candidate -> candidate.modid.equals(modid) && candidate.registryName.equals(registryName))
+                    .findFirst().orElse(null);
+            boolean enabled = buffer.readBoolean();
+            int durability = buffer.readVarInt();
+            float reduction = buffer.readFloat();
+            float toughness = buffer.readFloat();
+            int knockback = buffer.readVarInt();
+            int enchantability = buffer.readVarInt();
+            int effects = buffer.readVarInt();
+            java.util.ArrayList<SetEffect> decodedEffects = new java.util.ArrayList<>();
+            for (int e = 0; e < effects; e++) {
+                SetEffect effect = SetEffect.getEffectFromString(buffer.readUtf(32767));
+                if (effect != null) decodedEffects.add(effect);
+            }
+            if (set != null) {
+                set.armorDurability = durability;
+                set.armorDamageReduction = reduction;
+                set.armorToughness = toughness;
+                set.armorKnockbackResistance = knockback;
+                set.armorEnchantability = enchantability;
+                set.setEffects.clear();
+                set.setEffects.addAll(decodedEffects);
+                set.createMaterial();
+                if (enabled) set.enable(); else set.disable();
+            }
+        }
+    }
 }

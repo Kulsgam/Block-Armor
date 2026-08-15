@@ -3,193 +3,66 @@ package twopiradians.blockArmor.common.seteffect;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-
-import javax.annotation.Nullable;
-
-import com.google.gson.JsonObject;
-
+import org.jetbrains.annotations.Nullable;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.TranslatableComponent;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.SimpleContainer;
-import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.item.crafting.SmeltingRecipe;
-import net.minecraft.world.item.enchantment.EnchantmentHelper;
-import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.storage.loot.LootContext;
-import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
-import net.minecraft.world.level.storage.loot.predicates.LootItemCondition;
+import net.minecraft.world.item.enchantment.EnchantmentHelper;
+import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.common.loot.GlobalLootModifierSerializer;
-import net.minecraftforge.common.loot.LootModifier;
-import net.minecraftforge.event.entity.living.LivingDropsEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.items.ItemHandlerHelper;
 import twopiradians.blockArmor.common.BlockArmor;
 import twopiradians.blockArmor.common.item.ArmorSet;
 
-@Mod.EventBusSubscriber
+/** AutoSmelt behaviour; LootTableMixin supplies loot context on Fabric. */
 public class SetEffectAutoSmelt extends SetEffect {
-
-	protected SetEffectAutoSmelt() {
-		super();
-		this.color = ChatFormatting.DARK_RED;
-		this.usesButton = true;
-	}
-
-	@Override
-	public void onArmorTick(Level world, Player player, ItemStack stack) {
-		super.onArmorTick(world, player, stack);
-
-		if (ArmorSet.getFirstSetItem(player, this) == stack &&
-				!world.isClientSide && BlockArmor.key.isKeyDown(player) && !player.getCooldowns().isOnCooldown(stack.getItem())) {
-			boolean deactivated = !stack.getTag().getBoolean("deactivated");
-			stack.getTag().putBoolean("deactivated", deactivated);
-			player.sendMessage(new TranslatableComponent(ChatFormatting.GRAY+""+ChatFormatting.ITALIC+"AutoSmelt set effect "
-					+ (deactivated ? ChatFormatting.RED+""+ChatFormatting.ITALIC+"disabled" : ChatFormatting.GREEN+""+ChatFormatting.ITALIC+"enabled")), UUID.randomUUID());
-			this.setCooldown(player, 10);
-		}
-	}
-
-	/**Should block be given this set effect*/
-	@Override
-	protected boolean isValid(Block block) {		
-		if (SetEffect.registryNameContains(block, new String[] {"furnace", "fire", "flame", "smelt", "smoker", "coal"}) &&
-				!SetEffect.registryNameContains(block, new String[] {"coral"}))
-			return true;		
-		return false;
-	}
-
-	/**Smelt mob drops*/
-	@SubscribeEvent
-	public static void smeltMobDrops(LivingDropsEvent event) { 
-		if (event.getSource() != null && event.getEntity() != null && event.getEntity().level instanceof ServerLevel &&
-				event.getSource().getEntity() instanceof LivingEntity &&
-				ArmorSet.hasSetEffect((LivingEntity) event.getSource().getEntity(), SetEffect.AUTOSMELT) &&
-				!(event.getEntity() instanceof Player)) { // don't work on players to prevent abuse
-			// variables
-			ServerLevel world = (ServerLevel) event.getEntity().level;
-			boolean smelted = false;
-
-			// check if disabled
-			ItemStack stack = ArmorSet.getFirstSetItem((LivingEntity) event.getSource().getEntity(), SetEffect.AUTOSMELT);
-			if (!stack.hasTag() || stack.getTag().getBoolean("deactivated"))
-				return;
-
-			// try smelting items
-			for (ItemEntity item : event.getDrops()) {
-				ItemStack newStack = smelt(item.getItem(), world);
-				if (newStack != null) {
-					smelted = true;
-					item.setItem(newStack);
-				}
-			}
-
-			// effects if smelted
-			if (smelted) {
-				Vec3 pos = event.getEntity().position();
-				world.sendParticles(ParticleTypes.SMOKE, 
-						pos.x()+0.5f, pos.y()+0.5f,pos.z()+0.5f, 
-						10, 0.3f, 0.3f, 0.3f, 0);
-				world.playSound(null, event.getEntity().blockPosition(), 
-						SoundEvents.BLAZE_SHOOT, SoundSource.PLAYERS, 0.3f, world.random.nextFloat()+0.7f);			
-				SetEffect.AUTOSMELT.damageArmor((LivingEntity) event.getSource().getEntity(), 1, false);
-			}
-		}
-	}
-
-	/**Returns smelted form of item or null if it can't be smelted*/
-	@Nullable
-	private static ItemStack smelt(ItemStack stack, Level world) {
-		return world.getRecipeManager().getRecipeFor(RecipeType.SMELTING, new SimpleContainer(stack), world)
-				.map(SmeltingRecipe::getResultItem)
-				.filter(itemStack -> !itemStack.isEmpty())
-				.map(itemStack -> ItemHandlerHelper.copyStackWithSize(itemStack, stack.getCount() * itemStack.getCount()))
-				.orElse(null);
-	}
-
-	public static class EnchantmentSmeltingModifier extends LootModifier {
-
-		protected EnchantmentSmeltingModifier(LootItemCondition[] conditionsIn) {
-			super(conditionsIn);
-		}
-
-		@Override
-		protected List<ItemStack> doApply(List<ItemStack> generatedLoot, LootContext context) {
-			Entity entityIn = context.getParamOrNull(LootContextParams.THIS_ENTITY);
-			if (entityIn instanceof LivingEntity && ArmorSet.hasSetEffect((LivingEntity) entityIn, SetEffect.AUTOSMELT)) {
-				LivingEntity entity = (LivingEntity) entityIn;
-				ItemStack stack = ArmorSet.getFirstSetItem(entity, SetEffect.AUTOSMELT);
-				BlockState state = context.getParamOrNull(LootContextParams.BLOCK_STATE);
-				ItemStack tool = context.getParamOrNull(LootContextParams.TOOL);
-
-				if (entity.level.isClientSide || 
-						(tool != null && EnchantmentHelper.getEnchantments(tool).containsKey(Enchantments.SILK_TOUCH)) || 
-						!stack.hasTag() || stack.getTag().getBoolean("deactivated"))
-					return generatedLoot;
-
-				boolean smelted = false;
-
-				// smelt drops
-				ArrayList<ItemStack> newLoot = new ArrayList<ItemStack>();
-				for (ItemStack oldStack : generatedLoot) {
-					ItemStack newStack = smelt(oldStack, context.getLevel());
-					if (newStack != null) {
-						smelted = true;
-						newLoot.add(newStack);
-					}
-				}
-
-				// smelt block
-				if (!smelted && state != null) {
-					ItemStack newStack = smelt(new ItemStack(state.getBlock()), context.getLevel());
-					if (newStack != null)
-						smelted = true;
-					newLoot.add(newStack);
-				}
-
-				// effects if smelted
-				if (smelted) {
-					Vec3 pos = context.getParamOrNull(LootContextParams.ORIGIN);
-					context.getLevel().sendParticles(ParticleTypes.SMOKE, 
-							pos.x()+0.5f, pos.y()+0.5f,pos.z()+0.5f, 
-							10, 0.3f, 0.3f, 0.3f, 0);
-					context.getLevel().playSound(null, entity.blockPosition(), 
-							SoundEvents.BLAZE_SHOOT, SoundSource.PLAYERS, 0.1f, context.getLevel().random.nextFloat()+0.7f);			
-					SetEffect.AUTOSMELT.damageArmor(entity, 1, false);
-					return newLoot;
-				}
-			}
-			return generatedLoot;
-		}
-
-		public static class Serializer extends GlobalLootModifierSerializer<EnchantmentSmeltingModifier> {
-
-			@Override
-			public EnchantmentSmeltingModifier read(ResourceLocation location, JsonObject object, LootItemCondition[] conditions) {
-				return new EnchantmentSmeltingModifier(conditions);
-			}
-
-			@Override
-			public JsonObject write(EnchantmentSmeltingModifier instance) {
-				return this.makeConditions(instance.conditions);
-			}
-
-		}
-
-	}
-
+    protected SetEffectAutoSmelt() { super(); color = ChatFormatting.DARK_RED; usesButton = true; }
+    @Override public void onArmorTick(Level world, Player player, ItemStack stack) {
+        super.onArmorTick(world, player, stack);
+        if (!world.isClientSide && ArmorSet.getFirstSetItem(player, this) == stack && BlockArmor.key.isKeyDown(player)
+                && !player.getCooldowns().isOnCooldown(stack.getItem())) {
+            boolean disabled = !stack.getOrCreateTag().getBoolean("deactivated");
+            stack.getTag().putBoolean("deactivated", disabled);
+            player.sendMessage(new TranslatableComponent(ChatFormatting.GRAY + "" + ChatFormatting.ITALIC + "AutoSmelt set effect " +
+                    (disabled ? ChatFormatting.RED + "disabled" : ChatFormatting.GREEN + "enabled")), UUID.randomUUID());
+            setCooldown(player, 10);
+        }
+    }
+    @Override protected boolean isValid(Block block) { return SetEffect.registryNameContains(block, "furnace", "fire", "flame", "smelt", "smoker", "coal") && !SetEffect.registryNameContains(block, "coral"); }
+    @Nullable public static ItemStack smelt(ItemStack stack, Level world) {
+        return world.getRecipeManager().getRecipeFor(RecipeType.SMELTING, new SimpleContainer(stack), world)
+                .map(SmeltingRecipe::getResultItem).filter(result -> !result.isEmpty())
+                .map(result -> { ItemStack copy = result.copy(); copy.setCount(stack.getCount() * result.getCount()); return copy; }).orElse(null);
+    }
+    public static List<ItemStack> transformLoot(List<ItemStack> generated, LivingEntity entity, @Nullable BlockState state,
+            @Nullable ItemStack tool, @Nullable Vec3 origin, Level world) {
+        ItemStack armor = ArmorSet.getFirstSetItem(entity, AUTOSMELT);
+        if (armor == null || armor.getOrCreateTag().getBoolean("deactivated")
+                || (tool != null && EnchantmentHelper.getItemEnchantmentLevel(Enchantments.SILK_TOUCH, tool) > 0))
+            return generated;
+        List<ItemStack> result = new ArrayList<>(); boolean changed = false;
+        for (ItemStack stack : generated) { ItemStack smelted = smelt(stack, world); result.add(smelted == null ? stack : smelted); changed |= smelted != null; }
+        if (!changed && state != null) {
+            ItemStack smelted = smelt(new ItemStack(state.getBlock()), world);
+            if (smelted != null) { result.add(smelted); changed = true; }
+        }
+        if (changed && world instanceof ServerLevel server) {
+            Vec3 pos = origin == null ? entity.position() : origin;
+            server.sendParticles(ParticleTypes.SMOKE, pos.x + .5, pos.y + .5, pos.z + .5, 10, .3, .3, .3, 0);
+            world.playSound(null, new net.minecraft.core.BlockPos(pos), SoundEvents.BLAZE_SHOOT, SoundSource.PLAYERS, .1F, world.random.nextFloat() + .7F);
+            AUTOSMELT.damageArmor(entity, 1, false);
+        }
+        return result;
+    }
 }

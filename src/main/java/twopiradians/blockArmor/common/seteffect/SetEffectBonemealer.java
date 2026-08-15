@@ -36,8 +36,8 @@ public class SetEffectBonemealer extends SetEffect {
 			for (int x=-radius; x<radius; x++)
 				for (int y=-radius; y<radius; y++)
 					for (int z=-radius; z<radius; z++)
-						if (BoneMealItem.applyBonemeal(new ItemStack(Items.WHITE_DYE), 
-								world, player.blockPosition().offset(x, y, z), player)) 
+						if (BoneMealItem.growCrop(new ItemStack(Items.WHITE_DYE), 
+								world, player.blockPosition().offset(x, y, z))) 
 							bonemealed.add(player.blockPosition().offset(x, y, z));
 			if (!bonemealed.isEmpty()) {
 				this.setCooldown(player, 100);

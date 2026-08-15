@@ -8,13 +8,8 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.entity.living.LivingFallEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
 import twopiradians.blockArmor.common.item.ArmorSet;
 
-@Mod.EventBusSubscriber
 public class SetEffectSlimey extends SetEffect {
 
 	/**
@@ -60,47 +55,28 @@ public class SetEffectSlimey extends SetEffect {
 		}
 	}
 
-	@SubscribeEvent
-	public static void onEvent(LivingFallEvent event) {
-		if (ArmorSet.hasSetEffect(event.getEntityLiving(), SetEffect.SLIMEY)) {
-			if (!(event.getEntity() instanceof Player))
-				return;
-
-			Player player = (Player) event.getEntity();
-			if (!player.isShiftKeyDown()) {
-				event.setDamageMultiplier(0);
-				if (player.level.isClientSide) {
-					if (event.getDistance() <= 40 && event.getDistance() > 2D) 
-						player.setDeltaMovement(player.getDeltaMovement().x, Math.abs(player.getDeltaMovement().y * 0.9d), player.getDeltaMovement().z);
-					else if (event.getDistance() > 40 && event.getDistance() <= 100) 
-						player.setDeltaMovement(player.getDeltaMovement().x, Math.abs(player.getDeltaMovement().y * 0.9d * 1.5D), player.getDeltaMovement().z);
-					else if (event.getDistance() > 100) 
-						player.setDeltaMovement(player.getDeltaMovement().x, Math.abs(player.getDeltaMovement().y * 0.9d * 2D), player.getDeltaMovement().z);
-				
-					if (event.getDistance() > 2D)
-						player.level.playSound(player, player.getX(), player.getY(), player.getZ(), 
-								event.getDistance() > 40 ? SoundEvents.SLIME_JUMP : SoundEvents.SLIME_SQUISH, 
-										SoundSource.PLAYERS, 0.4F, 1.0F);
-					player.hasImpulse = true;
-					player.setOnGround(false);
-					player.hurtMarked = true;
-					bouncingEntity = player;
-					motionY = player.getDeltaMovement().y();
-				}
-				else 
-					event.setCanceled(true);
-			}
-			else
-				event.setDamageMultiplier(0.1f);
+	public static boolean preventsFallDamage(Player player, float distance) {
+		if (!ArmorSet.hasSetEffect(player, SetEffect.SLIMEY) || player.isShiftKeyDown()) return false;
+		if (player.level.isClientSide && distance > 2D) {
+			double multiplier = distance > 100 ? 2D : distance > 40 ? 1.5D : 1D;
+			player.setDeltaMovement(player.getDeltaMovement().x,
+					Math.abs(player.getDeltaMovement().y * .9D * multiplier), player.getDeltaMovement().z);
+			player.level.playSound(player, player.getX(), player.getY(), player.getZ(),
+					distance > 40 ? SoundEvents.SLIME_JUMP : SoundEvents.SLIME_SQUISH,
+					SoundSource.PLAYERS, .4F, 1F);
+			player.hasImpulse = true;
+			player.setOnGround(false);
+			player.hurtMarked = true;
+			bouncingEntity = player;
+			motionY = player.getDeltaMovement().y;
 		}
+		return true;
 	}
 
-	@SubscribeEvent
-	public static void onEvent(TickEvent.PlayerTickEvent event) {
-		if (bouncingEntity != null && event.player == bouncingEntity && bouncingEntity.level.isClientSide &&
-				event.phase == TickEvent.Phase.END) {
-			bouncingEntity.setDeltaMovement(bouncingEntity.getDeltaMovement().x, motionY, bouncingEntity.getDeltaMovement().z);
-			bouncingEntity.fallDistance = 0;
+	public static void finishBounce(Player player) {
+		if (bouncingEntity == player && player != null && player.level.isClientSide) {
+			player.setDeltaMovement(player.getDeltaMovement().x, motionY, player.getDeltaMovement().z);
+			player.fallDistance = 0;
 			bouncingEntity = null;
 		}
 	}

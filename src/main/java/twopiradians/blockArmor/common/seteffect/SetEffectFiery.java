@@ -5,12 +5,8 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.block.Block;
-import net.minecraftforge.event.entity.living.LivingAttackEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
 import twopiradians.blockArmor.common.item.ArmorSet;
 
-@Mod.EventBusSubscriber
 public class SetEffectFiery extends SetEffect {
 
 	protected SetEffectFiery() {
@@ -19,12 +15,8 @@ public class SetEffectFiery extends SetEffect {
 	}
 
 	/**Ignites attackers/attackees*/ 
-	@SubscribeEvent
-	public static void onEvent(LivingAttackEvent event) {		
-		if (SetEffect.FIERY.isEnabled() && event.getSource().getEntity() instanceof LivingEntity 
-				&& !event.getSource().getEntity().level.isClientSide) {
-			LivingEntity attacker = (LivingEntity) event.getSource().getEntity();
-			LivingEntity attacked = event.getEntityLiving();
+	public static void onAttack(LivingEntity attacker, LivingEntity attacked) {		
+		if (SetEffect.FIERY.isEnabled() && !attacker.level.isClientSide) {
 
 			//Lights the entity that attacks the wearer of the armor
 			if (ArmorSet.hasSetEffect(attacked, SetEffect.FIERY) && !attacker.isInWater())	{

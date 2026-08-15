@@ -1,6 +1,8 @@
 {
 	"itemGroup.blockArmorVanilla": "Block Armor: Vanilla Armors",
 	"itemGroup.blockArmorModded": "Block Armor: Modded Armors",
+	"itemGroup.blockarmor.block_armor_vanilla": "Block Armor: Vanilla Armors",
+	"itemGroup.blockarmor.block_armor_modded": "Block Armor: Modded Armors",
 	"config.setEffects": "Set Effects",
 	"config.armorSets": "Armor Sets",
 	"tile.blockarmor.moving_light_source.name": "Light",

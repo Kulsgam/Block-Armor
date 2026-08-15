@@ -42,15 +42,12 @@ import net.minecraft.world.item.TooltipFlag.Default;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 import twopiradians.blockArmor.common.BlockArmor;
 import twopiradians.blockArmor.common.item.ArmorSet;
 import twopiradians.blockArmor.common.item.BlockArmorItem;
 import twopiradians.blockArmor.common.seteffect.SetEffect;
 
 @SuppressWarnings({"all"})
-@OnlyIn(Dist.CLIENT)
 public class GuiArmorDisplay extends Screen {
 
 	/** Should armor display be opened on chat event? */
@@ -222,7 +219,7 @@ public class GuiArmorDisplay extends Screen {
 							length = this.font.width(string);
 					// tooltips
 					if (GUI_MODE == 3 || GUI_MODE == 5)
-						this.renderComponentTooltip(matrix, tooltip.stream().map(str -> new TextComponent(str)).collect(Collectors.toList()), (int)x-length/2, (int)y, font);
+						this.renderComponentTooltip(matrix, new ArrayList<Component>(tooltip.stream().map(TextComponent::new).collect(Collectors.toList())), (int)x-length/2, (int)y);
 					// items
 					if (GUI_MODE != 3) {
 						Lighting.setupFor3DItems();
@@ -320,7 +317,7 @@ public class GuiArmorDisplay extends Screen {
 							if (this.font.width(string) > length)
 								length = this.font.width(string);
 						}
-						this.renderComponentTooltip(matrix, tooltip, -length/2, 0, font);
+						this.renderComponentTooltip(matrix, tooltip, -length/2, 0);
 						matrix.popPose();
 						Lighting.setupFor3DItems();
 					}

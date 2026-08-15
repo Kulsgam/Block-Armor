@@ -1,4 +1,6 @@
 {
     "parent": "minecraft:item/generated",
-    "loader": "blockarmor:item_loader"
+    "textures": {
+        "layer0": "minecraft:item/iron_chestplate"
+    }
 }

@@ -61,7 +61,7 @@ public class SetEffectAbsorbent extends SetEffect {
 								((BlockArmorItem)oldStack.getItem()).set == wornSet) { //only change if wet sponge 
 							CompoundTag nbt = new CompoundTag();
 							oldStack.save(nbt);
-							nbt.putString("id", drySet.getArmorForSlot(slot).getRegistryName().toString());
+							nbt.putString("id", net.minecraft.core.Registry.ITEM.getKey(drySet.getArmorForSlot(slot)).toString());
 							player.setItemSlot(slot, ItemStack.of(nbt));
 						}
 					}
@@ -79,7 +79,7 @@ public class SetEffectAbsorbent extends SetEffect {
 								((BlockArmorItem)oldStack.getItem()).set == wornSet) { //only change if dry sponge 
 							CompoundTag nbt = new CompoundTag();
 							oldStack.save(nbt);
-							nbt.putString("id", wetSet.getArmorForSlot(slot).getRegistryName().toString());
+							nbt.putString("id", net.minecraft.core.Registry.ITEM.getKey(wetSet.getArmorForSlot(slot)).toString());
 							player.setItemSlot(slot, ItemStack.of(nbt));
 						}
 					}

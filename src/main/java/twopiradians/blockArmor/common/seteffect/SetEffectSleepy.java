@@ -1,7 +1,5 @@
 package twopiradians.blockArmor.common.seteffect;
 
-import java.lang.reflect.Method;
-
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.protocol.game.ClientboundCustomSoundPacket;
 import net.minecraft.server.level.ServerLevel;
@@ -13,14 +11,10 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
-import net.minecraftforge.fml.util.ObfuscationReflectionHelper;
 import twopiradians.blockArmor.common.BlockArmor;
 import twopiradians.blockArmor.common.item.ArmorSet;
 
 public class SetEffectSleepy extends SetEffect {
-
-	private static final Method WAKE_UP_ALL_PLAYERS = ObfuscationReflectionHelper.findMethod(ServerLevel.class, "m_8804_");
-	private static final Method RESET_WEATHER_CYCLE = ObfuscationReflectionHelper.findMethod(ServerLevel.class, "m_184097_");
 
 	protected SetEffectSleepy() {
 		super();
@@ -42,24 +36,23 @@ public class SetEffectSleepy extends SetEffect {
 				// copied from ServerLevel#tick
 				if (world.getGameRules().getBoolean(GameRules.RULE_DAYLIGHT)) {
 					long j = world.getDayTime() + 24000L;
-					((ServerLevel)world).setDayTime(net.minecraftforge.event.ForgeEventFactory.onSleepFinished((ServerLevel) world, j - j % 24000L, world.getDayTime()));
+					((ServerLevel)world).setDayTime(j - j % 24000L);
 				}
-				try {
-					WAKE_UP_ALL_PLAYERS.invoke(world);
-					if (world.getGameRules().getBoolean(GameRules.RULE_WEATHER_CYCLE) && world.isRaining()) 
-						RESET_WEATHER_CYCLE.invoke(world);
+				ServerLevel serverLevel = (ServerLevel) world;
+				for (ServerPlayer sleepingPlayer : serverLevel.getServer().getPlayerList().getPlayers()) {
+					if (sleepingPlayer.level == serverLevel && sleepingPlayer.isSleeping())
+						sleepingPlayer.stopSleepInBed(false, false);
 				}
-				catch (Exception e) {
-					e.printStackTrace();
-				}
+				if (world.getGameRules().getBoolean(GameRules.RULE_WEATHER_CYCLE) && world.isRaining())
+					serverLevel.setWeatherParameters(0, 0, false, false);
 
 				if (player instanceof ServerPlayer) 
-					((ServerPlayer)player).connection.send(new ClientboundCustomSoundPacket(SoundEvents.NOTE_BLOCK_CHIME.getRegistryName(), SoundSource.PLAYERS, player.position(), 0.5F, 1.4f));	
+					((ServerPlayer)player).connection.send(new ClientboundCustomSoundPacket(net.minecraft.core.Registry.SOUND_EVENT.getKey(SoundEvents.NOTE_BLOCK_CHIME), SoundSource.PLAYERS, player.position(), 0.5F, 1.4f));	
 				this.setCooldown(player, 100);
 			}
 			// not night time
 			else if (player instanceof ServerPlayer) {
-				((ServerPlayer)player).connection.send(new ClientboundCustomSoundPacket(SoundEvents.NOTE_BLOCK_BASS.getRegistryName(), SoundSource.PLAYERS, player.position(), 1.0F, world.random.nextFloat() + 0.5F));
+				((ServerPlayer)player).connection.send(new ClientboundCustomSoundPacket(net.minecraft.core.Registry.SOUND_EVENT.getKey(SoundEvents.NOTE_BLOCK_BASS), SoundSource.PLAYERS, player.position(), 1.0F, world.random.nextFloat() + 0.5F));
 				this.setCooldown(player, 10);
 			}
 		}

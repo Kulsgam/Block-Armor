@@ -6,7 +6,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.UUID;
 
-import javax.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -37,22 +37,13 @@ import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.event.entity.living.LivingEquipmentChangeEvent;
-import net.minecraftforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.network.PacketDistributor;
 import twopiradians.blockArmor.client.gui.EntityGuiPlayer;
 import twopiradians.blockArmor.client.key.KeyActivateSetEffect;
 import twopiradians.blockArmor.common.BlockArmor;
 import twopiradians.blockArmor.common.config.Config;
 import twopiradians.blockArmor.common.item.ArmorSet;
 import twopiradians.blockArmor.common.item.BlockArmorItem;
-import twopiradians.blockArmor.packet.SSyncCooldownsPacket;
 
-@Mod.EventBusSubscriber
 public class SetEffect {
 
 	public static final UUID ATTACK_SPEED_UUID = UUID.fromString("3094e67f-88f1-4d81-a59d-655d4e7e8065");
@@ -139,24 +130,25 @@ public class SetEffect {
 
 	/**Goes through allSets and assigns set effects to appropriate sets*/
 	public static void setup() {
-		for (ArmorSet set : ArmorSet.allSets) {
-			boolean hasEffectWithButton = false;
-			set.setEffects = new ArrayList<SetEffect>();
-			for (SetEffect effect : SetEffect.SET_EFFECTS)
-				//assign set effect if valid for block and set has max of 1 effect that uses button
-				if (effect.isValid(set.block) && !(effect.usesButton && hasEffectWithButton)) {
-					if (effect.usesButton)
-						hasEffectWithButton = true;
-					set.setEffects.add(effect.create(set.block));
-				}
-			set.defaultSetEffects = new ArrayList(set.setEffects);
-		}
+		for (ArmorSet set : ArmorSet.allSets) setup(set);
+	}
+
+	/**Assign the default effects for one set created while another mod is registering items. */
+	public static void setup(ArmorSet set) {
+		boolean hasEffectWithButton = false;
+		set.setEffects = new ArrayList<SetEffect>();
+		for (SetEffect effect : SetEffect.SET_EFFECTS)
+			if (effect.isValid(set.block) && !(effect.usesButton && hasEffectWithButton)) {
+				if (effect.usesButton) hasEffectWithButton = true;
+				set.setEffects.add(effect.create(set.block));
+			}
+		set.defaultSetEffects = new ArrayList(set.setEffects);
 	}
 
 	/**Checks if block's registry name contains any of the provided strings (with or without capitalized first letter)*/
 	public static boolean registryNameContains(Block block, String... strings) {
 		try { // TODO only work for " word ", "<eof>word ", " word<eof>", "<eof>word<eof>" (NOT "asdfWord")
-			String registryName = block.getRegistryName().getPath();
+			String registryName = net.minecraft.core.Registry.BLOCK.getKey(block).getPath();
 			String displayName = new ItemStack(block, 1).getHoverName().getContents();
 			for (String string : strings) {
 				if (registryName.contains(string) || registryName.contains(string.substring(0, 1).toUpperCase()+string.substring(1)) ||
@@ -240,13 +232,6 @@ public class SetEffect {
 			}
 	}
 
-	/**Send cooldowns to client bc it forgets about them when changing dimensions*/
-	@SubscribeEvent
-	public static void onDimensionChange(PlayerEvent.PlayerChangedDimensionEvent event) {
-		if (event.getPlayer() instanceof ServerPlayer)
-			BlockArmor.NETWORK.send(PacketDistributor.PLAYER.with(()->(ServerPlayer) event.getPlayer()), new SSyncCooldownsPacket(event.getPlayer()));
-	}
-
 	/**Only called when player wearing full, enabled set*/
 	public void onArmorTick(Level world, Player player, ItemStack stack) {
 		if (!world.isClientSide && ArmorSet.getFirstSetItem(player, this) == stack) {			
@@ -318,14 +303,11 @@ public class SetEffect {
 	/**Update stack nbt to show full set for getAttributeModifiers
 	 * Sometimes doesn't update items that are removed because 
 	 * the event.to, event.from, and event.slot aren't always accurate*/
-	@SubscribeEvent
-	public static void onEquipmentChange(LivingEquipmentChangeEvent event) {
-		HashSet<SetEffect> effects = ArmorSet.getWornSetEffects(event.getEntityLiving());
+	public static void onEquipmentChange(LivingEntity entity) {
+		HashSet<SetEffect> effects = ArmorSet.getWornSetEffects(entity);
 		for (EquipmentSlot slot : EquipmentSlot.values())
 			if (slot.getType() == Type.ARMOR) {
-				ItemStack stack = event.getEntityLiving().getItemBySlot(slot);
-				if (stack == event.getFrom())
-					stack = event.getTo();
+				ItemStack stack = entity.getItemBySlot(slot);
 				if (stack != null && stack.getItem() instanceof BlockArmorItem) {
 					if (!stack.hasTag())
 						stack.setTag(new CompoundTag());
@@ -354,7 +336,6 @@ public class SetEffect {
 	}
 
 	/**Set effect name and description if shifting*/
-	@OnlyIn(Dist.CLIENT)
 	public List<Component> addInformation(ItemStack stack, boolean isShiftDown, Player player, List<Component> tooltip, TooltipFlag flagIn) {
 		MutableComponent comp = new TextComponent("");
 		// set effect name
@@ -452,7 +433,7 @@ public class SetEffect {
 
 		public EnchantmentData(Enchantment ench, Short level, EquipmentSlot slot) {
 			this.ench = ench;
-			this.loc = ench.getRegistryName();
+			this.loc = net.minecraft.core.Registry.ENCHANTMENT.getKey(ench);
 			this.level = level;
 			this.slot = slot;
 		}

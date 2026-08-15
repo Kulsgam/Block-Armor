@@ -90,7 +90,7 @@ public class SetEffectEnder extends SetEffect {
 				}
 			// no valid pos found
 			if (player instanceof ServerPlayer) {
-				((ServerPlayer)player).connection.send(new ClientboundCustomSoundPacket(SoundEvents.NOTE_BLOCK_BASS.getRegistryName(), SoundSource.PLAYERS, player.position(), 1.0F, world.random.nextFloat() + 0.5F));	
+				((ServerPlayer)player).connection.send(new ClientboundCustomSoundPacket(net.minecraft.core.Registry.SOUND_EVENT.getKey(SoundEvents.NOTE_BLOCK_BASS), SoundSource.PLAYERS, player.position(), 1.0F, world.random.nextFloat() + 0.5F));	
 				this.setCooldown(player, 10);
 			}
 		}

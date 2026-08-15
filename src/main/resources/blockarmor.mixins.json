@@ -1,0 +1,23 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "twopiradians.blockArmor.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "mixins": [
+    "LivingEntityMixin",
+    "ItemStackMixin",
+    "ItemEntityMixin",
+    "ItemCooldownsAccessor",
+    "CooldownInstanceAccessor",
+    "EntityWaterStateAccessor",
+    "LootTableMixin",
+    "EnchantmentHelperMixin",
+    "AbstractContainerMenuAccessor",
+    "RecipeManagerAccessor"
+  ],
+  "client": [
+    "ModelPartAccessor",
+    "ClientPacketListenerMixin"
+  ],
+  "injectors": { "defaultRequire": 1 }
+}

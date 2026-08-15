@@ -1,45 +1,17 @@
 package twopiradians.blockArmor.common.block;
 
-import java.util.ArrayList;
-
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.resources.model.ModelResourceLocation;
-import net.minecraft.world.item.Item;
+import net.minecraft.core.Registry;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.Block;
-import net.minecraftforge.event.RegistryEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.common.Mod.EventBusSubscriber.Bus;
-import net.minecraftforge.registries.IForgeRegistry;
 import twopiradians.blockArmor.common.BlockArmor;
 
-public class ModBlocks {
-	
-	public static final BlockMovingLightSource MOVING_LIGHT_SOURCE = new BlockMovingLightSource();
+/** Fabric registry declarations for Block Armor's own blocks. */
+public final class ModBlocks {
+    public static final BlockMovingLightSource MOVING_LIGHT_SOURCE = new BlockMovingLightSource();
 
-	public static ArrayList<Block> allBlocks = new ArrayList<Block>();
+    private ModBlocks() {}
 
-	@Mod.EventBusSubscriber(bus = Bus.MOD)
-	public static class RegistrationHandler {
-
-		@SubscribeEvent
-		public static void registerBlocks(final RegistryEvent.Register<Block> event) {
-			register(event.getRegistry(), MOVING_LIGHT_SOURCE, "moving_light_source");
-		}
-
-		private static void register(IForgeRegistry<Block> registry, Block block, String blockName) {
-			allBlocks.add(block);
-			block.setRegistryName(BlockArmor.MODID, blockName);
-			registry.register(block);
-		}
-
-	}
-
-	@SuppressWarnings("deprecation")
-	public static void registerRenders() {
-		for (Block block : allBlocks)
-			Minecraft.getInstance().getItemRenderer().getItemModelShaper().register
-			(Item.byBlock(block), new ModelResourceLocation(block.getRegistryName(), "inventory"));
-	}
-
+    public static void register() {
+        Registry.register(Registry.BLOCK, new ResourceLocation(BlockArmor.MODID, "moving_light_source"), MOVING_LIGHT_SOURCE);
+    }
 }

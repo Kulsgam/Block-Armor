@@ -25,11 +25,9 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.network.PacketDistributor;
 import twopiradians.blockArmor.common.BlockArmor;
 import twopiradians.blockArmor.common.item.ArmorSet;
 import twopiradians.blockArmor.common.item.BlockArmorItem;
-import twopiradians.blockArmor.packet.SDevColorsPacket;
 
 public class CommandDev  {
 
@@ -103,7 +101,8 @@ public class CommandDev  {
 		// needs to be inverted for some reason..
 		else
 			devColors.put(player.getUUID(), new Float[] {1-red, 1-green, 1-blue});
-		BlockArmor.NETWORK.send(PacketDistributor.ALL.noArg(), new SDevColorsPacket());
+		for (ServerPlayer online : player.server.getPlayerList().getPlayers())
+			BlockArmor.NETWORK.sendDevColors(online);
 		return 1;
 	}
 

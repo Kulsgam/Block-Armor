@@ -1,9 +1,0 @@
-{
-	"type": "blockarmor:set_effect_lucky",
-	"conditions": [
-		{
-			"condition": "minecraft:entity_properties",
-			"entity": "this"
-		}
-	]
-}

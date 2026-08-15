@@ -8,12 +8,8 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.LeavesBlock;
-import net.minecraftforge.event.entity.living.LivingFallEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
 import twopiradians.blockArmor.common.item.ArmorSet;
 
-@Mod.EventBusSubscriber
 public class SetEffectLightweight extends SetEffect 
 {
 	protected SetEffectLightweight() {
@@ -22,18 +18,6 @@ public class SetEffectLightweight extends SetEffect
 	}
 
 	/**Reduce fall distance for less damage*/
-	@SubscribeEvent
-	public static void onEvent(LivingFallEvent event) {
-		if (ArmorSet.getWornSetEffects(event.getEntityLiving()).contains(SetEffect.LIGHTWEIGHT)) {
-			if (event.getEntityLiving().isShiftKeyDown()) {
-				event.setDamageMultiplier(0.1f);
-			}
-			else {
-				event.setDamageMultiplier(0.01f);
-				event.setDistance(event.getDistance()/10f);
-			}
-		}
-	}
 
 	/**Only called when player wearing full, enabled set*/
 	@Override

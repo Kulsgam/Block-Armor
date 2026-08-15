@@ -1,6 +1,5 @@
 package twopiradians.blockArmor.common.seteffect;
 
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -11,6 +10,9 @@ import com.google.common.collect.Maps;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.NonNullList;
+import net.minecraft.core.Registry;
+import net.minecraft.resources.ResourceLocation;
+import net.fabricmc.fabric.api.screenhandler.v1.ScreenHandlerRegistry;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.network.FriendlyByteBuf;
@@ -42,21 +44,11 @@ import net.minecraft.world.level.block.BarrelBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.ChestBlock;
 import net.minecraft.world.level.block.ShulkerBoxBlock;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.common.extensions.IForgeMenuType;
-import net.minecraftforge.event.RegistryEvent;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.common.Mod.EventBusSubscriber.Bus;
-import net.minecraftforge.fml.util.ObfuscationReflectionHelper;
-import net.minecraftforge.server.ServerLifecycleHooks;
 import twopiradians.blockArmor.common.BlockArmor;
 import twopiradians.blockArmor.common.item.ArmorSet;
 import twopiradians.blockArmor.common.item.BlockArmorItem;
+import twopiradians.blockArmor.mixin.AbstractContainerMenuAccessor;
 
-@Mod.EventBusSubscriber
 public class SetEffectHoarder extends SetEffect {
 
 	/**Map of Hoarder item to items it stores so nbt only has to update once per tick*/
@@ -93,8 +85,7 @@ public class SetEffectHoarder extends SetEffect {
 		if (!world.isClientSide && BlockArmor.key.isKeyDown(player) &&
 				ArmorSet.getFirstSetItem(player, this) == stack &&
 				!player.getCooldowns().isOnCooldown(stack.getItem())) {
-			if (player instanceof ServerPlayer)
-				((ServerPlayer)player).connection.send(new ClientboundCustomSoundPacket(SetEffect.HOARDER.getSoundEvent(player, true).getRegistryName(), SoundSource.PLAYERS, player.position(), 0.6f, 1));	
+			player.level.playSound(null, player.blockPosition(), SetEffect.HOARDER.getSoundEvent(player, true), SoundSource.PLAYERS, .6F, 1F);
 			player.openMenu(new HoarderProvider());
 			this.damageArmor(player, 1, false); 
 			this.setCooldown(player, 20);
@@ -111,7 +102,6 @@ public class SetEffectHoarder extends SetEffect {
 	}
 
 	/**Set effect name and description if shifting*/
-	@OnlyIn(Dist.CLIENT)
 	public List<Component> addInformation(ItemStack stack, boolean isShiftDown, Player player, List<Component> tooltip, TooltipFlag flagIn) {
 		tooltip = super.addInformation(stack, isShiftDown, player, tooltip, flagIn);
 
@@ -137,8 +127,8 @@ public class SetEffectHoarder extends SetEffect {
 		return tooltip;
 	}
 
-	@SubscribeEvent
-	public static void onTick(TickEvent.ServerTickEvent event) {
+	/** Flushes deferred Hoarder NBT writes once per server tick. */
+	public static void flushDirtyItems() {
 		if (!dirtyItems.isEmpty()) {
 			for (ItemStack armor : dirtyItems.keySet()) {
 				ItemStack[] items = dirtyItems.get(armor);
@@ -165,13 +155,6 @@ public class SetEffectHoarder extends SetEffect {
 	public void onBreak(ItemStack stack) {
 		// get player, item frame, or item entity with this item
 		Entity entity = stack.getEntityRepresentation();
-		if (entity == null && ServerLifecycleHooks.getCurrentServer() != null) {
-			for (Player player : ServerLifecycleHooks.getCurrentServer().getPlayerList().getPlayers())
-				if (player.getInventory().contains(stack)) {
-					entity = player;
-					break;
-				}
-		}
 
 		// spawn stored items
 		if (entity != null && !entity.level.isClientSide) {
@@ -181,9 +164,6 @@ public class SetEffectHoarder extends SetEffect {
 					entity.spawnAtLocation(storedItem);
 				stack.setCount(0);
 				// if hoarder gui is open - close it (to prevent dupes)
-				if (entity instanceof Player && 
-						((Player)entity).containerMenu instanceof HoarderContainer)
-					((Player)entity).closeContainer();
 			}
 		}
 
@@ -273,9 +253,6 @@ public class SetEffectHoarder extends SetEffect {
 
 	private static class HoarderContainer extends ChestMenu {
 
-		private static final Field LAST_SLOTS_FIELD = ObfuscationReflectionHelper.findField(AbstractContainerMenu.class, "f_38841_");
-		private static final Field REMOTE_SLOTS_FIELD = ObfuscationReflectionHelper.findField(AbstractContainerMenu.class, "f_150394_");
-
 		public HoarderContainer(int id, Inventory playerInventory) {
 			this(id, playerInventory, getStoredItems(playerInventory.player).toArray(new ItemStack[0]), playerInventory.player);
 		}
@@ -296,31 +273,22 @@ public class SetEffectHoarder extends SetEffect {
 
 		public HoarderContainer(int id, Inventory playerInventory, Player player, SimpleContainer inv, int numRows) {
 			super(getContainerType(player), id, playerInventory, inv, numRows);
-
-			// clear existing slots
 			this.slots.clear();
-			try {
-				((NonNullList<ItemStack>) LAST_SLOTS_FIELD.get(this)).clear(); 
-				((NonNullList<ItemStack>) REMOTE_SLOTS_FIELD.get(this)).clear(); 
-			}
-			catch (Exception e) {
-				e.printStackTrace();
-			}
+			AbstractContainerMenuAccessor accessor = (AbstractContainerMenuAccessor) this;
+			accessor.blockarmor$getLastSlots().clear();
+			accessor.blockarmor$getRemoteSlots().clear();
 
-			int i = (numRows - 4) * 18;
-
-			// add custom slots to prevent storing more hoarder items
-			for(int j = 0; j < numRows; ++j) 
-				for(int k = 0; k < 9; ++k) 
-					this.addSlot(new HoarderSlot(this.getContainer(), k + j * 9, 8 + k * 18, 18 + j * 18));
-
-			// add regular inventory + hotbar slots
-			for(int l = 0; l < 3; ++l) 
-				for(int j1 = 0; j1 < 9; ++j1) 
-					this.addSlot(new Slot(playerInventory, j1 + l * 9 + 9, 8 + j1 * 18, 103 + l * 18 + i));
-
-			for(int i1 = 0; i1 < 9; ++i1) 
-				this.addSlot(new Slot(playerInventory, i1, 8 + i1 * 18, 161 + i));
+			int offset = (numRows - 4) * 18;
+			for (int row = 0; row < numRows; ++row)
+				for (int column = 0; column < 9; ++column)
+					this.addSlot(new HoarderSlot(this.getContainer(), column + row * 9,
+							8 + column * 18, 18 + row * 18));
+			for (int row = 0; row < 3; ++row)
+				for (int column = 0; column < 9; ++column)
+					this.addSlot(new Slot(playerInventory, column + row * 9 + 9,
+							8 + column * 18, 103 + row * 18 + offset));
+			for (int column = 0; column < 9; ++column)
+				this.addSlot(new Slot(playerInventory, column, 8 + column * 18, 161 + offset));
 		}
 
 		@Override
@@ -328,7 +296,7 @@ public class SetEffectHoarder extends SetEffect {
 			super.removed(player);
 
 			if (!player.level.isClientSide && player instanceof ServerPlayer)
-				((ServerPlayer)player).connection.send(new ClientboundCustomSoundPacket(SetEffect.HOARDER.getSoundEvent(player, false).getRegistryName(), SoundSource.PLAYERS, player.position(), 0.6f, 1));	
+				player.level.playSound(null, player.blockPosition(), SetEffect.HOARDER.getSoundEvent(player, false), SoundSource.PLAYERS, .6F, 1F);
 		}
 
 		@Override
@@ -356,31 +324,16 @@ public class SetEffectHoarder extends SetEffect {
 		}
 	}	
 
-	@Mod.EventBusSubscriber(bus = Bus.MOD)
-	public static class RegistrationHandler {
-
-		@SubscribeEvent
-		public static void registerContainers(final RegistryEvent.Register<MenuType<?>> event) {
-			containerType_9x1 = IForgeMenuType.create(HoarderContainer::createContainerClientSide);
-			containerType_9x1.setRegistryName("hoarder_container_9x1");
-			event.getRegistry().register(containerType_9x1);
-			containerType_9x2 = IForgeMenuType.create(HoarderContainer::createContainerClientSide);
-			containerType_9x2.setRegistryName("hoarder_container_9x2");
-			event.getRegistry().register(containerType_9x2);
-			containerType_9x3 = IForgeMenuType.create(HoarderContainer::createContainerClientSide);
-			containerType_9x3.setRegistryName("hoarder_container_9x3");
-			event.getRegistry().register(containerType_9x3);
-			containerType_9x4 = IForgeMenuType.create(HoarderContainer::createContainerClientSide);
-			containerType_9x4.setRegistryName("hoarder_container_9x4");
-			event.getRegistry().register(containerType_9x4);
-			containerType_9x5 = IForgeMenuType.create(HoarderContainer::createContainerClientSide);
-			containerType_9x5.setRegistryName("hoarder_container_9x5");
-			event.getRegistry().register(containerType_9x5);
-			containerType_9x6 = IForgeMenuType.create(HoarderContainer::createContainerClientSide);
-			containerType_9x6.setRegistryName("hoarder_container_9x6");
-			event.getRegistry().register(containerType_9x6);
-		}
-
+	public static void registerContainers() {
+		containerType_9x1 = registerContainer("hoarder_container_9x1");
+		containerType_9x2 = registerContainer("hoarder_container_9x2");
+		containerType_9x3 = registerContainer("hoarder_container_9x3");
+		containerType_9x4 = registerContainer("hoarder_container_9x4");
+		containerType_9x5 = registerContainer("hoarder_container_9x5");
+		containerType_9x6 = registerContainer("hoarder_container_9x6");
+	}
+	private static MenuType<HoarderContainer> registerContainer(String id) {
+		return ScreenHandlerRegistry.registerSimple(new ResourceLocation(BlockArmor.MODID, id), HoarderContainer::new);
 	}
 
 }

@@ -2,20 +2,16 @@ package twopiradians.blockArmor.common.item;
 
 import java.util.List;
 import java.util.UUID;
-import java.util.function.Consumer;
 
-import javax.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 
 import net.minecraft.ChatFormatting;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.model.HumanoidModel;
-import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.core.NonNullList;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.TextComponent;
 import net.minecraft.network.chat.TranslatableComponent;
@@ -35,16 +31,19 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Rarity;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.client.IItemRenderProperties;
-import twopiradians.blockArmor.client.ClientProxy;
-import twopiradians.blockArmor.client.model.ModelBAArmor;
 import twopiradians.blockArmor.common.command.CommandDev;
 import twopiradians.blockArmor.common.config.Config;
 import twopiradians.blockArmor.common.seteffect.SetEffect;
+import twopiradians.blockArmor.creativetab.BlockArmorCreativeTab;
+import twopiradians.blockArmor.common.ClientTooltipState;
 
 public class BlockArmorItem extends ArmorItem {
+	public static boolean hasRealEnchantment(ItemStack stack) {
+		ListTag enchantments = stack.getEnchantmentTags();
+		for (int i=0;i<enchantments.size();i++)
+			if (!enchantments.getCompound(i).getBoolean(twopiradians.blockArmor.common.BlockArmor.MODID+" enchant")) return true;
+		return false;
+	}
 	/** Copied from ArmorItem bc private */
 	private static final UUID[] ARMOR_MODIFIERS = new UUID[] { UUID.fromString("845DB27C-C624-495F-8C9F-6020A9A58B6B"),
 			UUID.fromString("D8499B04-0E66-4726-AB29-64469D734E0D"),
@@ -60,42 +59,10 @@ public class BlockArmorItem extends ArmorItem {
 	private HashMultimap<Attribute, AttributeModifier> attributes;
 
 	public BlockArmorItem(BlockArmorMaterial material, EquipmentSlot slot, ArmorSet set) {
-		super(material, slot, new Item.Properties().tab(CreativeModeTab.TAB_COMBAT)); // combat group for recipe book
+		super(material, slot, new Item.Properties().tab(set.isFromModdedBlock ? BlockArmorCreativeTab.moddedTab : BlockArmorCreativeTab.vanillaTab).durability(material.getDurabilityForSlot(slot)));
 		this.set = set;
+		this.group = set.isEnabled() ? (set.isFromModdedBlock ? BlockArmorCreativeTab.moddedTab : BlockArmorCreativeTab.vanillaTab) : null;
 		this.setMaterial(material);
-	}
-
-	/** Change armor texture based on block */
-	@Override
-	@OnlyIn(Dist.CLIENT)
-	public String getArmorTexture(ItemStack stack, Entity entity, EquipmentSlot slot, String type) {
-		TextureAtlasSprite sprite = this.set.getTextureInfo(slot).sprite;
-		String texture = sprite.getName() + ".png";
-		int index = texture.indexOf(":");
-		texture = texture.substring(0, index + 1) + "textures/" + texture.substring(index + 1);
-		return texture;
-	}
-
-	@Override 
-	@OnlyIn(Dist.CLIENT)
-	public void initializeClient(Consumer<IItemRenderProperties> consumer) {
-		consumer.accept(new IItemRenderProperties() {
-			@Override
-			@OnlyIn(Dist.CLIENT)
-			public <A extends HumanoidModel<?>> A getArmorModel(LivingEntity entity, ItemStack stack, EquipmentSlot armorSlot, A _default) {
-				BlockArmorItem item = (BlockArmorItem) stack.getItem();
-				TextureInfo info = item.set.getTextureInfo(item.slot);
-				TextureAtlasSprite sprite = info.sprite;
-				int width = sprite.getWidth();
-				int height = info.originalHeight;
-				int currentFrame = info.getCurrentAnimationFrame();
-				int nextFrame = info.getNextAnimationFrame();
-				ModelBAArmor model = (ModelBAArmor) ClientProxy.getBlockArmorModel(entity, height, width, currentFrame, nextFrame, slot);
-				model.color = info.color;
-				model.alpha = info.getAlpha();
-				return (A) model;
-			}
-		});
 	}
 
 	/** Don't display item in creative tab/JEI if disabled */
@@ -107,8 +74,7 @@ public class BlockArmorItem extends ArmorItem {
 			super.fillItemCategory(group, items);
 	}
 
-	@Override
-	protected boolean allowdedIn(CreativeModeTab group) {
+	@Override protected boolean allowdedIn(CreativeModeTab group) {
 		return set.isEnabled() && group != null && (group == CreativeModeTab.TAB_SEARCH || group == this.group);
 	}
 
@@ -116,14 +82,15 @@ public class BlockArmorItem extends ArmorItem {
 		this.group = group;
 	}
 
-	@Override
-	public void setDamage(ItemStack stack, int damage) {
-		// default
-		stack.getOrCreateTag().putInt("Damage", Math.max(0, damage));
-
-		// spawn hoarder items
-		if (damage >= this.getMaxDamage(stack) && this.set.setEffects.contains(SetEffect.HOARDER))
+	public void beforeDamageChanged(ItemStack stack, int oldDamage, int damage) {
+		if (oldDamage < stack.getMaxDamage() && damage >= stack.getMaxDamage()
+				&& this.set.setEffects.contains(SetEffect.HOARDER))
 			SetEffect.HOARDER.onBreak(stack);
+	}
+
+	/** Maximum damage must remain config-driven after registry construction. */
+	public int getConfiguredMaxDamage() {
+		return Math.max(0, (int) (material.getDurabilityForSlot(slot) * Config.globalDurabilityModifier));
 	}
 
 	/** Change display name based on the block */
@@ -133,7 +100,6 @@ public class BlockArmorItem extends ArmorItem {
 	}
 
 	/** Handles the attributes when wearing an armor set */
-	@Override
 	public Multimap<Attribute, AttributeModifier> getAttributeModifiers(EquipmentSlot slot, ItemStack stack) {
 		Multimap<Attribute, AttributeModifier> map = slot == this.slot ? HashMultimap.create(this.attributes) : HashMultimap.create();
 		if (slot != this.slot)
@@ -158,7 +124,6 @@ public class BlockArmorItem extends ArmorItem {
 
 	/** Deals with armor tooltips */
 	@Override
-	@OnlyIn(Dist.CLIENT)
 	public void appendHoverText(ItemStack stack, @Nullable Level worldIn, List<Component> tooltip,
 			TooltipFlag flagIn) {
 		if (stack.hasTag() && stack.getTag().contains("devSpawned"))
@@ -166,7 +131,10 @@ public class BlockArmorItem extends ArmorItem {
 
 		if (!set.setEffects.isEmpty() && set.setEffects.get(0).isEnabled()) {
 			// add header if shifting
-			if (Screen.hasShiftDown())
+			// The client screen supplies the expanded tooltip through its normal
+			// advanced-tooltip path; common item code must not reference client classes.
+			boolean expanded = ClientTooltipState.isShiftDown();
+			if (expanded)
 				tooltip.add(new TranslatableComponent("item.blockarmor.tooltip.setEffects", 
 						new TranslatableComponent("item.blockarmor.tooltip.setEffectsRequire"+(Config.piecesForSet == 4 ? "" : "+"), Config.piecesForSet)
 						.withStyle(ChatFormatting.ITALIC), Config.piecesForSet)
@@ -175,7 +143,7 @@ public class BlockArmorItem extends ArmorItem {
 			// set effect names and descriptions if shifting
 			for (SetEffect effect : set.setEffects)
 				if (effect.isEnabled())
-					tooltip = effect.addInformation(stack, Screen.hasShiftDown(), Minecraft.getInstance().player,
+					tooltip = effect.addInformation(stack, expanded, ClientTooltipState.player(),
 							tooltip, flagIn);
 		}
 	}
@@ -201,8 +169,7 @@ public class BlockArmorItem extends ArmorItem {
 	}
 
 	/** Delete dev spawned dropped items */
-	@Override
-	public boolean onEntityItemUpdate(ItemStack stack, ItemEntity entityItem) {
+	public boolean tickDropped(ItemStack stack, ItemEntity entityItem) {
 		// delete dev spawned items if not worn by dev and delete disabled items (except
 		// missingTexture items in SMP)
 		if ((!set.isEnabled() && !entityItem.level.isClientSide)
@@ -215,8 +182,7 @@ public class BlockArmorItem extends ArmorItem {
 	}
 
 	/** Handles most of the armor set special effects and bonuses. */
-	@Override
-	public void onArmorTick(ItemStack stack, Level world, Player player) {
+	public void tickEquipped(ItemStack stack, Level world, Player player) {
 		// delete dev spawned items if not worn by dev and delete disabled items (except
 		// missingTexture items in SMP)
 		if (stack.isEmpty() || (!set.isEnabled() && !world.isClientSide)
@@ -251,8 +217,6 @@ public class BlockArmorItem extends ArmorItem {
 					new AttributeModifier(uuid, "Armor knockback resistance",
 							(this.material.getKnockbackResistance()) / 10d * Config.globalKnockbackResistanceModifier,
 							AttributeModifier.Operation.ADDITION));
-		// change max damage (bc method is final)
-		this.maxDamage = (int) (material.getDurabilityForSlot(slot) * Config.globalDurabilityModifier);
 	}
 
 	@Override

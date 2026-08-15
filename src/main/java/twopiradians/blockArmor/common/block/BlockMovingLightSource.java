@@ -1,7 +1,7 @@
 package twopiradians.blockArmor.common.block;
 
 
-import javax.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.LivingEntity;
@@ -24,9 +24,6 @@ import net.minecraft.world.level.material.Material;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.fml.DistExecutor;
-import twopiradians.blockArmor.client.ClientProxy;
 import twopiradians.blockArmor.common.tileentity.TileEntityMovingLightSource;
 
 /**Used for armor sets that produce light*/
@@ -68,16 +65,6 @@ public class BlockMovingLightSource extends BaseEntityBlock {
 		return new TileEntityMovingLightSource(state.getValue(LIGHT_LEVEL).intValue(), pos, state);
 	}
 
-	@Override
-	public StateDefinition<Block, BlockState> getStateDefinition() {
-		DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> {ClientProxy.mapUnbakedModels();}); // hacky way to map models in ModelBakery#processLoading
-		return super.getStateDefinition();
-	}
-
-	@Override
-	public boolean isAir(BlockState state) {
-		return false;
-	}
 
 	@Nullable
 	@Override

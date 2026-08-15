@@ -1,85 +1,56 @@
 package twopiradians.blockArmor.common.item;
 
 import java.util.ArrayList;
-import java.util.Iterator;
+import java.util.List;
 
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.resources.model.ModelResourceLocation;
+import net.minecraft.core.Registry;
+import net.fabricmc.fabric.api.event.registry.RegistryEntryAddedCallback;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EquipmentSlot;
-import net.minecraft.world.entity.npc.VillagerProfession;
 import net.minecraft.world.item.Item;
-import net.minecraftforge.event.RegistryEvent;
-import net.minecraftforge.eventbus.api.EventPriority;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.ModLoadingContext;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.common.Mod.EventBusSubscriber.Bus;
-import net.minecraftforge.fml.config.ModConfig;
-import net.minecraftforge.registries.ForgeRegistries;
-import net.minecraftforge.registries.ForgeRegistry;
-import net.minecraftforge.registries.IForgeRegistry;
 import twopiradians.blockArmor.common.BlockArmor;
 import twopiradians.blockArmor.common.config.Config;
 import twopiradians.blockArmor.common.seteffect.SetEffect;
 
-public class ModItems {
+/** Registers the four armor items generated for every eligible loaded block. */
+public final class ModItems {
+    public static final List<BlockArmorItem> allArmors = new ArrayList<>();
 
-	public static ArrayList<BlockArmorItem> allArmors = new ArrayList<BlockArmorItem>();
+    private ModItems() {}
 
-	@Mod.EventBusSubscriber(bus = Bus.MOD)
-	public static class RegistrationHandler {
+    public static void discoverGeneratedArmor() {
+		RegistryEntryAddedCallback.event(Registry.ITEM).register((rawId, id, item) -> {
+			if (item instanceof net.minecraft.world.item.BlockItem) registerGeneratedArmor(item);
+		});
+        ArmorSet.setup(Registry.ITEM.stream().toList());
+    }
 
-		@SubscribeEvent(priority=EventPriority.LOWEST)
-		public static void registerItems(final RegistryEvent.Register<VillagerProfession> event) {	
-			// hacky way to make sure our items are registered last
-			// by registering during a later registry event and unfreezing / refreezing registry
-			ForgeRegistry registry = (ForgeRegistry) ForgeRegistries.ITEMS;
-			registry.unfreeze();
-			
-			ArmorSet.setup(registry.getValues()); 
-			SetEffect.setup();
-			// load config
-			ModLoadingContext.get().registerConfig(ModConfig.Type.SERVER, Config.init());
+    public static void registerDiscoveredArmor() {
+        for (ArmorSet set : ArmorSet.allSets) register(set);
+        BlockArmor.LOGGER.info("Registered {} generated Block Armor items", allArmors.size());
+    }
 
-			int vanillaItems = 0;
-			int moddedItems = 0;
+    private static void registerGeneratedArmor(Item item) {
+        ArmorSet.setup(List.of(item));
+        ArmorSet set = ArmorSet.getSet(item);
+        if (set == null || set.helmet != null) return;
+        SetEffect.setup(set);
+        Config.applyToLateSet(set);
+        register(set);
+    }
 
-			Iterator<ArmorSet> it = ArmorSet.allSets.iterator();
-			while (it.hasNext()) { 
-				ArmorSet set = it.next();
-				String registryName = ArmorSet.getItemRegistryName(set.item);
-				set.helmet = register(registry, new BlockArmorItem(set.material, EquipmentSlot.HEAD, set), registryName+"_helmet");
-				set.chestplate = register(registry, new BlockArmorItem(set.material, EquipmentSlot.CHEST, set), registryName+"_chestplate");
-				set.leggings = register(registry, new BlockArmorItem(set.material, EquipmentSlot.LEGS, set), registryName+"_leggings");
-				set.boots = register(registry, new BlockArmorItem(set.material, EquipmentSlot.FEET, set), registryName+"_boots");
-				if (set.isFromModdedBlock)
-					moddedItems += 4;
-				else
-					vanillaItems += 4;
+    private static void register(ArmorSet set) {
+        if (set.helmet != null) return;
+        String base = ArmorSet.getItemRegistryName(set.item);
+        set.helmet = register(new BlockArmorItem(set.material, EquipmentSlot.HEAD, set), base + "_helmet");
+        set.chestplate = register(new BlockArmorItem(set.material, EquipmentSlot.CHEST, set), base + "_chestplate");
+        set.leggings = register(new BlockArmorItem(set.material, EquipmentSlot.LEGS, set), base + "_leggings");
+        set.boots = register(new BlockArmorItem(set.material, EquipmentSlot.FEET, set), base + "_boots");
+        if (set.isEnabled()) set.enable();
+    }
 
-				set.enable(); // enable here so they're added to creative tab right away (can be disabled when config loads)
-			}
-
-			BlockArmor.LOGGER.info("Generated "+vanillaItems+" Block Armor items from Vanilla blocks");
-			if (moddedItems > 0)
-				BlockArmor.LOGGER.info("Generated "+moddedItems+" Block Armor items from Modded blocks");
-			
-			registry.freeze();
-		}
-
-	}
-
-	private static BlockArmorItem register(IForgeRegistry<Item> registry, BlockArmorItem armor, String itemName) {
-		allArmors.add(armor);
-		armor.setRegistryName(BlockArmor.MODID, itemName);
-		registry.register(armor);
-		return armor;
-	}
-
-	public static void registerRenders() {
-		for (BlockArmorItem item : allArmors) 
-			Minecraft.getInstance().getItemRenderer().getItemModelShaper().register
-			(item, new ModelResourceLocation(item.getRegistryName(), "inventory"));
-	}
-
+    private static BlockArmorItem register(BlockArmorItem item, String path) {
+        allArmors.add(item);
+        return Registry.register(Registry.ITEM, new ResourceLocation(BlockArmor.MODID, path), item);
+    }
 }

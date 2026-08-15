@@ -2,46 +2,32 @@ package twopiradians.blockArmor.packet;
 
 import java.util.ArrayList;
 import java.util.UUID;
-import java.util.function.Supplier;
 
 import com.google.common.collect.Maps;
-
+import io.netty.buffer.Unpooled;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.network.NetworkEvent;
 import twopiradians.blockArmor.common.command.CommandDev;
 
-public class SDevColorsPacket
-{
-	public SDevColorsPacket() {}
+public final class SDevColorsPacket {
+    private SDevColorsPacket() {}
 
-	public static void encode(SDevColorsPacket packet, FriendlyByteBuf buf) {
-		ArrayList<UUID> keys = new ArrayList<UUID>(CommandDev.devColors.keySet());
-		int count = keys.size();
-		buf.writeInt(count);
-		for (int i=0; i<count; i++) {
-			buf.writeUtf(keys.get(i).toString());
-			buf.writeFloat(CommandDev.devColors.get(keys.get(i))[0]);
-			buf.writeFloat(CommandDev.devColors.get(keys.get(i))[1]);
-			buf.writeFloat(CommandDev.devColors.get(keys.get(i))[2]);
-		}
-	}
+    public static FriendlyByteBuf encode() {
+        FriendlyByteBuf buffer = new FriendlyByteBuf(Unpooled.buffer());
+        ArrayList<UUID> ids = new ArrayList<>(CommandDev.devColors.keySet());
+        buffer.writeVarInt(ids.size());
+        for (UUID id : ids) {
+            Float[] color = CommandDev.devColors.get(id);
+            buffer.writeUUID(id);
+            buffer.writeFloat(color[0]); buffer.writeFloat(color[1]); buffer.writeFloat(color[2]);
+        }
+        return buffer;
+    }
 
-	public static SDevColorsPacket decode(FriendlyByteBuf buf) {		
-		CommandDev.devColors = Maps.newHashMap();
-		int count = buf.readInt();
-		for (int i=0; i<count; i++) {
-			UUID uuid = UUID.fromString(buf.readUtf(32767));
-			Float[] color = new Float[] { buf.readFloat(),  buf.readFloat(),  buf.readFloat()};
-			CommandDev.devColors.put(uuid, color);
-		}
-		return new SDevColorsPacket();
-	}
-
-	public static class Handler
-	{
-
-		public static void handle(SDevColorsPacket packet, Supplier<NetworkEvent.Context> ctx) {
-			ctx.get().setPacketHandled(true);
-		}
-	}
+    public static void decode(FriendlyByteBuf buffer) {
+        CommandDev.devColors = Maps.newHashMap();
+        for (int count = buffer.readVarInt(); count > 0; count--) {
+            CommandDev.devColors.put(buffer.readUUID(), new Float[] {
+                    buffer.readFloat(), buffer.readFloat(), buffer.readFloat() });
+        }
+    }
 }

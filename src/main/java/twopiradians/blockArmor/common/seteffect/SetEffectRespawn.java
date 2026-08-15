@@ -12,12 +12,9 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.level.biome.BiomeManager;
 import net.minecraft.world.level.block.Block;
-import net.minecraftforge.event.entity.living.LivingDeathEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+
 import twopiradians.blockArmor.common.item.ArmorSet;
 
-@Mod.EventBusSubscriber
 public class SetEffectRespawn extends SetEffect {
 
 	protected SetEffectRespawn() {
@@ -26,11 +23,9 @@ public class SetEffectRespawn extends SetEffect {
 	}
 
 	/**Teleport player instead of them dying*/
-	@SubscribeEvent
-	public static void onEvent(LivingDeathEvent event) {
+	public static boolean onDeath(ServerPlayer player) {
 		try {
-			if (event.getEntityLiving() instanceof ServerPlayer) {
-				ServerPlayer player = (ServerPlayer) event.getEntityLiving();
+			if (player != null) {
 				if (!player.level.isClientSide && 
 						ArmorSet.hasSetEffect(player, SetEffect.RESPAWN) && 
 						!player.getCooldowns().isOnCooldown(ArmorSet.getFirstSetItem(player, SetEffect.RESPAWN).getItem())) {
@@ -57,19 +52,19 @@ public class SetEffectRespawn extends SetEffect {
 					player.connection.teleport(player.getX(), player.getY(), player.getZ(), player.getYRot(), player.getXRot());
 					player.connection.send(new ClientboundSetDefaultSpawnPositionPacket(respawnWorld.getSharedSpawnPos(), respawnWorld.getSharedSpawnAngle()));
 					player.connection.send(new ClientboundSetExperiencePacket(player.experienceProgress, player.totalExperience, player.experienceLevel));
-					player.initMenu(player.containerMenu); 
 					// cooldown, damage, sound
 					SetEffect.RESPAWN.setCooldown(player, 6000);
 					SetEffect.RESPAWN.damageArmor(player, 100, true);
 					player.connection.send(new ClientboundSoundPacket(SoundEvents.RESPAWN_ANCHOR_DEPLETE, SoundSource.BLOCKS, (double)player.getX(), (double)player.getY(), (double)player.getZ(), 1.0F, 1.0F));
 					// cancel event so player doesn't die
-					event.setCanceled(true);
+					return true;
 				}
 			}
 		}
 		catch (Exception e) {
 			e.printStackTrace();
 		}
+		return false;
 	}
 
 	/**Should block be given this set effect*/

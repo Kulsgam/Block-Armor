@@ -6,36 +6,28 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Random;
 import java.util.TreeSet;
 import java.util.UUID;
 
-import javax.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 import net.minecraft.ChatFormatting;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.block.model.BakedQuad;
-import net.minecraft.client.renderer.texture.MissingTextureAtlasSprite;
-import net.minecraft.client.renderer.texture.TextureAtlas;
-import net.minecraft.client.renderer.texture.TextureAtlasSprite;
-import net.minecraft.client.renderer.texture.TextureAtlasSprite.AnimatedTexture;
-import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.TextComponent;
 import net.minecraft.network.chat.TranslatableComponent;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvents;
-import net.minecraft.util.Tuple;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.CreativeModeTab;
+import twopiradians.blockArmor.creativetab.BlockArmorCreativeTab;
 import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -50,28 +42,17 @@ import net.minecraft.world.level.block.CropBlock;
 import net.minecraft.world.level.block.InfestedBlock;
 import net.minecraft.world.level.block.LiquidBlock;
 import net.minecraft.world.level.block.OreBlock;
-import net.minecraft.world.level.block.RedstoneLampBlock;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.ShulkerBoxBlock;
 import net.minecraft.world.level.block.SlabBlock;
-import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.server.ServerLifecycleHooks;
 import twopiradians.blockArmor.common.BlockArmor;
 import twopiradians.blockArmor.common.command.CommandDev;
 import twopiradians.blockArmor.common.config.Config;
 import twopiradians.blockArmor.common.seteffect.SetEffect;
-import twopiradians.blockArmor.creativetab.BlockArmorCreativeTab;
 import twopiradians.blockArmor.utils.BlockUtils;
 
-@Mod.EventBusSubscriber
 @SuppressWarnings({ "deprecation" })
 public class ArmorSet {
 
@@ -349,9 +330,6 @@ public class ArmorSet {
 	public static HashMap<String, ArmorSet> nameToSetMap = Maps.newHashMap();
 	/**All sets, mapped by their block's modid*/
 	public static HashMap<String, TreeSet<ArmorSet>> modidToSetMap = Maps.newHashMap();
-	/**Minecraft's default missing texture sprite, assigned in initTextures()*/
-	@OnlyIn(Dist.CLIENT)
-	public static TextureAtlasSprite missingSprite;
 	/**Map of player UUID to their worn set effects*/
 	private static HashMap<UUID, HashSet<SetEffect>> playerSetEffectsClient = Maps.newHashMap();
 	/**Map of player UUID to their worn set effects*/
@@ -376,9 +354,6 @@ public class ArmorSet {
 	private boolean enabled;
 	/**Only changed on client*/
 	public boolean missingTextures; 
-	/**Array of block's textures sorted by EquipmentSlotType id*/
-	@OnlyIn(Dist.CLIENT)
-	private HashMap<EquipmentSlot, TextureInfo> textureInfo;
 	// armor values calculated from block / config
 	public float armorDamageReduction;
 	public float armorToughness;
@@ -391,7 +366,7 @@ public class ArmorSet {
 		this.block = ((BlockItem) item).getBlock();
 		this.registryName = ArmorSet.getItemRegistryName(this.item);
 		try {
-			ResourceLocation loc = this.item.getRegistryName();
+			ResourceLocation loc = net.minecraft.core.Registry.ITEM.getKey(this.item);
 			this.modid = loc.getNamespace().toLowerCase();
 			if (!this.modid.equals("minecraft"))
 				isFromModdedBlock = true;
@@ -464,13 +439,6 @@ public class ArmorSet {
 		}
 	}
 
-	@OnlyIn(Dist.CLIENT)
-	public TextureInfo getTextureInfo(EquipmentSlot slot) {
-		if (this.textureInfo == null)
-			this.initTextures();
-		return this.textureInfo.get(slot);
-	}
-
 	/**Creates ArmorSets for each valid registered item and puts them in allSets
 	 * Have to use these items instead of looking through block registry or else
 	 * creative tabs will have all modded blocks as air for some reason... (from using new ItemStack(block))
@@ -481,6 +449,8 @@ public class ArmorSet {
 		//create list of all ItemStacks with different display names and list of the display names
 		ArrayList<String> displayNames = new ArrayList<String>();
 		ArrayList<Item> items = new ArrayList<Item>();
+		for (ArmorSet existing : allSets)
+			displayNames.add(getNormalDisplayName(existing.item));
 		for (Item item : itemsIn) {
 			try { 
 				if (item instanceof BlockItem) {
@@ -502,11 +472,10 @@ public class ArmorSet {
 
 		//creates list of names that the items will be registered with to prevent duplicates
 		ArrayList<String> registryNames = new ArrayList<String>();
+		for (ArmorSet existing : allSets)
+			registryNames.add(existing.registryName);
 
 		//checks list of ItemStacks for valid ones and creates set and adds to allSets
-		allSets = new ArrayList<ArmorSet>();
-		nameToSetMap = Maps.newHashMap();
-		modidToSetMap = Maps.newHashMap();
 		for (Item item : items) {
 			if (isValid(item) && ArmorSet.getSet(item) == null) {
 				String registryName = getItemRegistryName(item);
@@ -544,7 +513,7 @@ public class ArmorSet {
 	/**Used to uniformly create registry name*/
 	public static String getItemRegistryName(Item item) {
 		try {
-			String registryName = item.getRegistryName().getPath().toLowerCase().replace(" ", "_");
+			String registryName = net.minecraft.core.Registry.ITEM.getKey(item).getPath().toLowerCase().replace(" ", "_");
 			return registryName;
 		} 
 		catch (Exception e) {
@@ -645,7 +614,7 @@ public class ArmorSet {
 			// manually added blocks (only vanilla cuz we're overriding the textures)
 			if ((block instanceof ShulkerBoxBlock ||
 					block instanceof BedBlock) && 
-					block.getRegistryName().getNamespace().equals("minecraft")) {
+					net.minecraft.core.Registry.BLOCK.getKey(block).getNamespace().equals("minecraft")) {
 				//BlockArmor.LOGGER.debug("Valid "+itemIn.toString()+": manual");
 				return true;
 			}
@@ -655,8 +624,8 @@ public class ArmorSet {
 					return true;
 				}
 			String displayName = getNormalDisplayName(itemIn);
-			String registryName = item.getRegistryName().getPath();
-			String modid = item.getRegistryName().getNamespace();
+			String registryName = net.minecraft.core.Registry.ITEM.getKey(item).getPath();
+			String modid = net.minecraft.core.Registry.ITEM.getKey(item).getNamespace();
 			// bad modded item, ore/ingot, or unnamed
 			if (modid.contains("one_point_twelve_concrete") ||
 					modid.contains("railcraft") ||
@@ -689,7 +658,7 @@ public class ArmorSet {
 				return false;
 			}
 			// bad modded items
-			registryName = block.getRegistryName().toString();
+			registryName = net.minecraft.core.Registry.BLOCK.getKey(block).toString();
 			if (registryName.equalsIgnoreCase("evilcraft:darkBlock") || 
 					registryName.equalsIgnoreCase("evilcraft:obscuredGlass") ||
 					registryName.equalsIgnoreCase("evilcraft:hardenedBlood") ||
@@ -730,27 +699,17 @@ public class ArmorSet {
 
 	/**Adds set items to creative tab and adds recipes*/
 	public boolean enable() {
-		if (this.enabled || this.missingTextures) //don't enable sets with missing textures
+		if (this.missingTextures)
 			return false;
-		else
-			this.enabled = true;
+		this.enabled = true;
 
 		BlockArmorItem[] armors = new BlockArmorItem[] {this.helmet, this.chestplate, this.leggings, this.boots};
 		for (BlockArmorItem armor : armors) {
 			if (armor != null) {
-				//add to tab
-				if (isFromModdedBlock) {
-					if (BlockArmorCreativeTab.moddedTab == null)
-						BlockArmorCreativeTab.moddedTab = new BlockArmorCreativeTab("blockArmorModded");
-					BlockArmorCreativeTab.moddedTab.orderedStacks.add(new ItemStack(armor));
-					armor.group = BlockArmorCreativeTab.moddedTab;
-				}
-				else {
-					if (BlockArmorCreativeTab.vanillaTab == null)
-						BlockArmorCreativeTab.vanillaTab = new BlockArmorCreativeTab("blockArmorVanilla");
-					BlockArmorCreativeTab.vanillaTab.orderedStacks.add(new ItemStack(armor));
-					armor.group = BlockArmorCreativeTab.vanillaTab;
-				}
+				CreativeModeTab tab = isFromModdedBlock ? BlockArmorCreativeTab.moddedTab : BlockArmorCreativeTab.vanillaTab;
+				armor.group = tab;
+				java.util.List<ItemStack> stacks = isFromModdedBlock ? BlockArmorCreativeTab.moddedStacks : BlockArmorCreativeTab.vanillaStacks;
+				if (stacks.stream().noneMatch(stack -> stack.getItem() == armor)) stacks.add(new ItemStack(armor));
 			}
 		}
 
@@ -765,122 +724,14 @@ public class ArmorSet {
 			return false;
 
 		BlockArmorItem[] armors = new BlockArmorItem[] {this.helmet, this.chestplate, this.leggings, this.boots};
-		for (BlockArmorItem armor : armors) {
-			//remove from creative tab
-			armor.group = null;
-
-			//remove from vanilla tab
-			if (BlockArmorCreativeTab.vanillaTab != null && BlockArmorCreativeTab.vanillaTab.orderedStacks != null)
-				for (ItemStack tabStack : BlockArmorCreativeTab.vanillaTab.orderedStacks)
-					if (tabStack.getItem() == armor) {
-						BlockArmorCreativeTab.vanillaTab.orderedStacks.remove(tabStack);
-						break;
-					}
-
-			//remove from modded tab
-			if (BlockArmorCreativeTab.moddedTab != null && BlockArmorCreativeTab.moddedTab.orderedStacks != null)
-				for (ItemStack tabStack : BlockArmorCreativeTab.moddedTab.orderedStacks)
-					if (tabStack.getItem() == armor) {
-						BlockArmorCreativeTab.moddedTab.orderedStacks.remove(tabStack);
-						break;
-					}
-		}
+		for (BlockArmorItem armor : armors)
+			if (armor != null) {
+				armor.group = null;
+				BlockArmorCreativeTab.vanillaStacks.removeIf(stack -> stack.getItem() == armor);
+				BlockArmorCreativeTab.moddedStacks.removeIf(stack -> stack.getItem() == armor);
+			}
 
 		return true;
-	}
-
-	/**Initialize set's texture variables*/
-	@OnlyIn(Dist.CLIENT)
-	public Tuple<Integer, Boolean> initTextures() {
-		boolean missingTextures = false;
-
-		if (missingSprite == null)
-			missingSprite = MissingTextureAtlasSprite
-			.newInstance(new TextureAtlas(MissingTextureAtlasSprite.getLocation()), 0, 16, 16, 0, 0);
-
-		int numTextures = 0;
-		this.textureInfo = Maps.newHashMap();
-		BlockState state = this.block.defaultBlockState();
-
-		// state overrides
-		if (this.block == Blocks.REDSTONE_LAMP)
-			state = state.setValue(RedstoneLampBlock.LIT, true);
-
-		//Gets textures from item model's BakedQuads (textures for each side)
-		List<BakedQuad> list = new ArrayList<BakedQuad>();
-		try {
-			BakedModel model = Minecraft.getInstance().getBlockRenderer().getBlockModel(state);
-
-			Random rand = new Random();
-			//getting quads may throw exception if a mod's modeler doesn't obey @Nullable
-			list.addAll(model.getQuads(state, null, rand));
-			for (Direction facing : Direction.values()) 
-				list.addAll(model.getQuads(state, facing, rand));
-
-			for (BakedQuad quad : list) {
-				TextureAtlasSprite sprite = quad.getSprite();
-				AnimatedTexture animatedTexture = (sprite.getFrameCount() > 1 && sprite.getAnimationTicker() instanceof AnimatedTexture ? (AnimatedTexture) sprite.getAnimationTicker() : null); 
-				//List<AnimationFrame> animationFrames = animation == null ? null : (List<AnimationFrame>) ANIMATION_FRAMES_FIELD.get(animation);
-				int color = quad.isTinted() ? Minecraft.getInstance().getItemColors().getColor(this.getStack(), quad.getTintIndex()) : -1;
-
-				if (sprite.getName().toString().contains("overlay")) //overlays not supported by forge so we can't account for them
-					continue;
-
-				if (quad.getDirection() == Direction.UP) { //top
-					if (sprite != missingSprite)
-						numTextures++;
-					this.textureInfo.put(EquipmentSlot.HEAD, new TextureInfo(sprite, color, animatedTexture));
-				}
-				else if (quad.getDirection() == Direction.NORTH) { //front
-					if (sprite != missingSprite)
-						numTextures++;
-					this.textureInfo.put(EquipmentSlot.CHEST, new TextureInfo(sprite, color, animatedTexture));
-				}
-				else if (quad.getDirection() == Direction.SOUTH) { //back
-					if (sprite != missingSprite)
-						numTextures++;
-					this.textureInfo.put(EquipmentSlot.LEGS, new TextureInfo(sprite, color, animatedTexture));
-				}
-				else if (quad.getDirection() == Direction.DOWN) { //bottom
-					if (sprite != missingSprite)
-						numTextures++;
-					this.textureInfo.put(EquipmentSlot.FEET, new TextureInfo(sprite, color, animatedTexture));
-				}
-			}
-		}
-		catch (Exception e) {
-			e.printStackTrace();
-		}
-
-		//Check for block texture overrides
-		if (TEXTURE_OVERRIDES.containsKey(block)) 
-			for (EquipmentSlot slot : TEXTURE_OVERRIDES.get(block).overrides.keySet()) {
-				ResourceLocation shortLoc = TEXTURE_OVERRIDES.get(block).overrides.get(slot).shortLoc;
-				ResourceLocation longLoc = TEXTURE_OVERRIDES.get(block).overrides.get(slot).longLoc;
-				try {
-					// look for override texture
-					Minecraft.getInstance().getResourceManager().getResource(longLoc); //does texture exist?
-					TextureAtlasSprite sprite = Minecraft.getInstance().getModelManager().getAtlas(TextureAtlas.LOCATION_BLOCKS).getSprite(shortLoc);
-					this.textureInfo.put(slot, new TextureInfo(sprite, TEXTURE_OVERRIDES.get(block).overrides.get(slot).color, null));
-					//BlockArmor.LOGGER.info("Override texture for "+this.stack.getDisplayName().getString()+" "+slot.getName()+" found at: "+longLoc);
-				} catch (Exception e) {
-					BlockArmor.LOGGER.error("Override texture for "+this.getStack().getHoverName().getString()+" "+slot.getName()+" NOT found at: "+longLoc); 
-				}
-			}
-
-		// if no info for slot, put in blank texture info
-		for (EquipmentSlot slot : SLOTS)
-			if (!this.textureInfo.containsKey(slot))
-				this.textureInfo.put(slot, new TextureInfo(null, -1, null));
-
-		//If a sprite is missing, disable the set
-		if (this.textureInfo.get(EquipmentSlot.HEAD).sprite == missingSprite ||
-				this.textureInfo.get(EquipmentSlot.CHEST).sprite == missingSprite ||
-				this.textureInfo.get(EquipmentSlot.LEGS).sprite == missingSprite || 
-				this.textureInfo.get(EquipmentSlot.FEET).sprite == missingSprite) 
-			missingTextures = true;
-
-		return new Tuple(numTextures, missingTextures);
 	}
 
 	// ================== WORN SET EFFECTS =================
@@ -890,28 +741,28 @@ public class ArmorSet {
 	}
 
 	/**Call onStop for set effects on logout - only called serverside in SSP*/
-	@SubscribeEvent
-	public static void onEvent(PlayerEvent.PlayerLoggedOutEvent event) {
-		HashMap<UUID, HashSet<SetEffect>> playerSetEffects = getPlayerSetEffects(event.getPlayer().level.isClientSide);
-		if (playerSetEffects.containsKey(event.getPlayer().getUUID())) {
-			for (SetEffect effect : playerSetEffects.get(event.getPlayer().getUUID()))
-				effect.onStop(event.getPlayer());
-			playerSetEffects.remove(event.getPlayer().getUUID());
+	public static void onLogout(Player player) {
+		HashMap<UUID, HashSet<SetEffect>> playerSetEffects = getPlayerSetEffects(player.level.isClientSide);
+		if (playerSetEffects.containsKey(player.getUUID())) {
+			for (SetEffect effect : playerSetEffects.get(player.getUUID()))
+				effect.onStop(player);
+			playerSetEffects.remove(player.getUUID());
 		}
 	}
 
 	/**Update player set effects each tick*/
-	@SubscribeEvent
-	public static void onEvent(TickEvent.ClientTickEvent event) {
-		if (event.phase == TickEvent.Phase.START && Minecraft.getInstance().level != null)
-			updateWornSetEffects(getPlayerSetEffects(true), Minecraft.getInstance().level.players());
+	public static void tickClient(List<? extends Player> players) {
+		updateWornSetEffects(getPlayerSetEffects(true), players);
+		for (Player player : players)
+			twopiradians.blockArmor.common.ArmorLifecycle.tickPlayer(player);
 	}
 
 	/**Update player set effects each tick*/
-	@SubscribeEvent
-	public static void onEvent(TickEvent.ServerTickEvent event) {
-		if (event.phase == TickEvent.Phase.START)
-			updateWornSetEffects(getPlayerSetEffects(false), ServerLifecycleHooks.getCurrentServer().getPlayerList().getPlayers()); 
+	public static void tickServer(net.minecraft.server.MinecraftServer server) {
+		List<? extends Player> players = server.getPlayerList().getPlayers();
+		updateWornSetEffects(getPlayerSetEffects(false), players);
+		for (Player player : players)
+			twopiradians.blockArmor.common.ArmorLifecycle.tickPlayer(player);
 	}
 
 	/**Update player set effects each tick for efficiency and onStart and onStop*/
@@ -933,6 +784,9 @@ public class ArmorSet {
 					oldEffect.onStop(player);
 			// update set effects
 			playerSetEffects.put(player.getUUID(), newEffects);
+			// Fabric does not expose Forge's LivingEquipmentChangeEvent. Keep the
+			// full-set NBT marker current after every calculated equipment state.
+			SetEffect.onEquipmentChange(player);
 		}
 	}
 

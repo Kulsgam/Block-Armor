@@ -1,7 +1,5 @@
 package twopiradians.blockArmor.common.seteffect;
 
-import java.lang.reflect.Field;
-
 import net.minecraft.ChatFormatting;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
@@ -10,12 +8,9 @@ import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.fml.util.ObfuscationReflectionHelper;
+import twopiradians.blockArmor.mixin.EntityWaterStateAccessor;
 
 public class SetEffectRocky extends SetEffect {
-
-	private static final Field WAS_TOUCHING_WATER_FIELD = ObfuscationReflectionHelper.findField(Entity.class, "f_19798_");
-	private static final Field FIRST_TICK_FIELD = ObfuscationReflectionHelper.findField(Entity.class, "f_19803_");
 
 	protected SetEffectRocky() {
 		super();
@@ -29,15 +24,9 @@ public class SetEffectRocky extends SetEffect {
 		Vec3 motion = player.getDeltaMovement();
 		if (player.isInWater()) {
 			player.setSwimming(false); // prevent swimming
-			try {	
-				// set to not in water (so player sinks and can move normally)
-				WAS_TOUCHING_WATER_FIELD.set(player, false); 
-				// set firstUpdate to true so it doesn't spawn a ton of bubble particles in and make sounds
-				FIRST_TICK_FIELD.set(player, true);
-			}
-			catch (Exception e) {
-				e.printStackTrace();
-			}
+			EntityWaterStateAccessor state = (EntityWaterStateAccessor) player;
+			state.blockarmor$setWasTouchingWater(false);
+			state.blockarmor$setFirstTick(true);
 			// slow down under water a bit (if no depth strider)
 			if ((Math.abs(motion.x) > 0 || Math.abs(motion.z) > 0 || motion.y > 0) && 
 					EnchantmentHelper.getDepthStrider(player) == 0) {

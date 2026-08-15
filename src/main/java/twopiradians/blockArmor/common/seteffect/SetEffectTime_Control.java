@@ -10,8 +10,7 @@ import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.fml.DistExecutor;
+
 import twopiradians.blockArmor.client.ClientProxy;
 import twopiradians.blockArmor.common.BlockArmor;
 import twopiradians.blockArmor.common.CommonProxy;
@@ -74,8 +73,8 @@ public class SetEffectTime_Control extends SetEffect {
 	}
 
 	public void setWorldTime(Level world, long time) {
-		DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> {ClientProxy.setWorldTime(world, time);});
-		DistExecutor.unsafeRunWhenOn(Dist.DEDICATED_SERVER, () -> () -> {CommonProxy.setWorldTime(world, time);});
+		if (world.isClientSide) ClientProxy.setWorldTime(world, time);
+		if (!world.isClientSide) CommonProxy.setWorldTime(world, time);
 	}
 
 	/**Can be overwritten to return a new instance depending on the given block*/

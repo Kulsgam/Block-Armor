@@ -7,8 +7,6 @@ import net.minecraft.util.LazyLoadedValue;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.ArmorMaterial;
 import net.minecraft.world.item.crafting.Ingredient;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 
 @SuppressWarnings("deprecation")
 public class BlockArmorMaterial implements ArmorMaterial {
@@ -62,9 +60,11 @@ public class BlockArmorMaterial implements ArmorMaterial {
 	}
 
 	@Override
-	@OnlyIn(Dist.CLIENT)
 	public String getName() {
-		return this.name;
+		// ArmorItem's vanilla layer renderer derives a texture path from this
+		// value. Generated block names have no corresponding texture files, so
+		// use the always-present iron layers until a custom renderer is selected.
+		return "iron";
 	}
 
 	@Override

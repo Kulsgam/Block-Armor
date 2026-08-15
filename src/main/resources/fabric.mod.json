@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "id": "blockarmor",
+  "version": "${version}",
+  "name": "Block Armor",
+  "description": "Armor made from blocks, with block-specific set effects and resource-pack-aware textures.",
+  "authors": ["2piradians", "Furgl"],
+  "contact": {
+    "homepage": "https://www.curseforge.com/minecraft/mc-mods/block-armor",
+    "issues": "https://github.com/2piradians/Block-Armor/issues"
+  },
+  "license": "All Rights Reserved",
+  "icon": "logo.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": ["twopiradians.blockArmor.BlockArmorFabric"],
+    "client": ["twopiradians.blockArmor.client.BlockArmorFabricClient"]
+  },
+  "mixins": ["blockarmor.mixins.json"],
+  "depends": {
+    "fabricloader": ">=0.12.12",
+    "fabric": ">=0.46.4+1.18",
+    "minecraft": "1.18.1",
+    "java": ">=17"
+  }
+}

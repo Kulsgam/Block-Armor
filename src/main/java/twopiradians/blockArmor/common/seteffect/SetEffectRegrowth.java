@@ -10,7 +10,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.BonemealableBlock;
 import net.minecraft.world.level.block.NetherrackBlock;
 import net.minecraft.world.level.material.Material;
-import net.minecraftforge.common.IPlantable;
+
 import twopiradians.blockArmor.utils.BlockUtils;
 
 public class SetEffectRegrowth extends SetEffect {
@@ -35,7 +35,7 @@ public class SetEffectRegrowth extends SetEffect {
 		if (block instanceof NetherrackBlock)
 			return false;
 		
-		if (block instanceof BonemealableBlock || block instanceof IPlantable || 
+		if (block instanceof BonemealableBlock || 
 				SetEffect.registryNameContains(block, new String[] {"moss", "plant", "mycelium", "mushroom", "flower",
 						"log", "wood", "stem", "plank", "grass", "nether_wart"}))
 			return true;	

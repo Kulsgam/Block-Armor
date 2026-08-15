@@ -12,13 +12,10 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
-import net.minecraftforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+
 import twopiradians.blockArmor.common.item.ArmorSet;
 import twopiradians.blockArmor.utils.BlockUtils;
 
-@Mod.EventBusSubscriber
 public class SetEffectHealth_Boost extends SetEffect {
 
 	private static HashSet<ServerPlayer> playersToCheck = Sets.newHashSet();
@@ -56,17 +53,15 @@ public class SetEffectHealth_Boost extends SetEffect {
 	}
 
 	/**Restore health when player logging in with health armor*/
-	@SubscribeEvent
-	public static void onLogin(PlayerEvent.PlayerLoggedInEvent event) {		
-		if (!event.getPlayer().level.isClientSide && event.getPlayer() instanceof ServerPlayer)
-			playersToCheck.add((ServerPlayer) event.getPlayer());
+	public static void onLogin(ServerPlayer player) {		
+		if (!player.level.isClientSide && player instanceof ServerPlayer)
+			playersToCheck.add((ServerPlayer) player);
 	}
 	
 	/**Restore health when player respawned with health armor on*/
-	@SubscribeEvent
-	public static void onRespawn(PlayerEvent.PlayerRespawnEvent event) {		
-		if (!event.getPlayer().level.isClientSide && event.getPlayer() instanceof ServerPlayer)
-			playersToCheck.add((ServerPlayer) event.getPlayer());
+	public static void onRespawn(ServerPlayer player) {		
+		if (!player.level.isClientSide && player instanceof ServerPlayer)
+			playersToCheck.add((ServerPlayer) player);
 	}
 
 	/**Can be overwritten to return a new instance depending on the given block*/
