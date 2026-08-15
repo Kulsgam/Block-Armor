@@ -13,11 +13,15 @@
     "LootTableMixin",
     "EnchantmentHelperMixin",
     "AbstractContainerMenuAccessor",
-    "RecipeManagerAccessor"
+    "RecipeManagerAccessor",
+    "AnvilMenuMixin",
+    "ItemCombinerMenuAccessor"
   ],
   "client": [
     "ModelPartAccessor",
-    "ClientPacketListenerMixin"
+    "TextureAtlasSpriteAccessor",
+    "ClientPacketListenerMixin",
+    "MinecraftItemColorsAccessor"
   ],
   "injectors": { "defaultRequire": 1 }
 }

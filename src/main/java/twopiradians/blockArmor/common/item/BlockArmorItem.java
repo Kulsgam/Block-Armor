@@ -84,13 +84,17 @@ public class BlockArmorItem extends ArmorItem {
 
 	public void beforeDamageChanged(ItemStack stack, int oldDamage, int damage) {
 		if (oldDamage < stack.getMaxDamage() && damage >= stack.getMaxDamage()
-				&& this.set.setEffects.contains(SetEffect.HOARDER))
+				&& CombinedArmorData.hasEffect(stack, SetEffect.HOARDER))
 			SetEffect.HOARDER.onBreak(stack);
 	}
 
 	/** Maximum damage must remain config-driven after registry construction. */
 	public int getConfiguredMaxDamage() {
 		return Math.max(0, (int) (material.getDurabilityForSlot(slot) * Config.globalDurabilityModifier));
+	}
+	public int getConfiguredMaxDamage(ItemStack stack) { return CombinedArmorData.maxDamage(stack, getConfiguredMaxDamage()); }
+	public Multimap<Attribute, AttributeModifier> baseAttributes(EquipmentSlot requestedSlot) {
+		return requestedSlot == this.slot ? HashMultimap.create(this.attributes) : HashMultimap.create();
 	}
 
 	/** Change display name based on the block */
@@ -101,11 +105,12 @@ public class BlockArmorItem extends ArmorItem {
 
 	/** Handles the attributes when wearing an armor set */
 	public Multimap<Attribute, AttributeModifier> getAttributeModifiers(EquipmentSlot slot, ItemStack stack) {
-		Multimap<Attribute, AttributeModifier> map = slot == this.slot ? HashMultimap.create(this.attributes) : HashMultimap.create();
+		Multimap<Attribute, AttributeModifier> map = baseAttributes(slot);
 		if (slot != this.slot)
 			return map;
 
-		for (SetEffect effect : set.setEffects)
+		map = CombinedArmorData.attributes(stack, slot, map);
+		for (SetEffect effect : CombinedArmorData.effects(stack))
 			map = effect.getAttributeModifiers(map, slot, stack);
 
 		return map;
@@ -116,7 +121,7 @@ public class BlockArmorItem extends ArmorItem {
 	public Rarity getRarity(ItemStack stack) {
 		if (stack.isEnchanted())
 			return Rarity.RARE;
-		else if (!set.setEffects.isEmpty())
+		else if (!CombinedArmorData.effects(stack).isEmpty())
 			return Rarity.UNCOMMON;
 		else
 			return Rarity.COMMON;
@@ -129,7 +134,8 @@ public class BlockArmorItem extends ArmorItem {
 		if (stack.hasTag() && stack.getTag().contains("devSpawned"))
 			tooltip.add(new TextComponent(ChatFormatting.DARK_PURPLE + "" + ChatFormatting.BOLD + "Dev Spawned"));
 
-		if (!set.setEffects.isEmpty() && set.setEffects.get(0).isEnabled()) {
+		List<SetEffect> stackEffects = CombinedArmorData.effects(stack);
+		if (!stackEffects.isEmpty() && stackEffects.get(0).isEnabled()) {
 			// add header if shifting
 			// The client screen supplies the expanded tooltip through its normal
 			// advanced-tooltip path; common item code must not reference client classes.
@@ -141,7 +147,7 @@ public class BlockArmorItem extends ArmorItem {
 						.withStyle(ChatFormatting.GOLD));
 
 			// set effect names and descriptions if shifting
-			for (SetEffect effect : set.setEffects)
+			for (SetEffect effect : stackEffects)
 				if (effect.isEnabled())
 					tooltip = effect.addInformation(stack, expanded, ClientTooltipState.player(),
 							tooltip, flagIn);
@@ -164,7 +170,7 @@ public class BlockArmorItem extends ArmorItem {
 		if (!stack.hasTag())
 			stack.setTag(new CompoundTag());
 
-		for (SetEffect effect : set.setEffects)
+		for (SetEffect effect : CombinedArmorData.effects(stack))
 			effect.onUpdate(stack, world, entity, slot.getFilterFlag(), isSelected);
 	}
 
@@ -196,7 +202,7 @@ public class BlockArmorItem extends ArmorItem {
 		if (!stack.hasTag())
 			stack.setTag(new CompoundTag());
 
-		for (SetEffect effect : set.setEffects)
+		for (SetEffect effect : CombinedArmorData.effects(stack))
 			if (ArmorSet.getWornSetEffects(player).contains(effect))
 				effect.onArmorTick(world, player, stack);
 	}

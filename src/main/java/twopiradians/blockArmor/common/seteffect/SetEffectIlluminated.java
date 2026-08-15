@@ -72,6 +72,7 @@ public class SetEffectIlluminated extends SetEffect {
 	public String writeToString() {
 		return this.name+" ("+this.lightLevel+")";
 	}
+	@Override public double mergeStrength() { return lightLevel; }
 
 	/**Read an effect from this string in config (takes into account variables in parenthesis)*/
 	@Override

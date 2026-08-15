@@ -319,7 +319,7 @@ public class SetEffectHoarder extends SetEffect {
 		/**Prevent putting in Hoarder items and shulker boxes*/
 		public boolean mayPlace(ItemStack stack) {
 			return !(stack.getItem() instanceof BlockArmorItem && 
-					((BlockArmorItem)stack.getItem()).set.setEffects.contains(SetEffect.HOARDER)) &&
+					twopiradians.blockArmor.common.item.CombinedArmorData.hasEffect(stack, SetEffect.HOARDER)) &&
 					!(stack.getItem() instanceof BlockItem && ((BlockItem)stack.getItem()).getBlock() instanceof ShulkerBoxBlock);
 		}
 	}	

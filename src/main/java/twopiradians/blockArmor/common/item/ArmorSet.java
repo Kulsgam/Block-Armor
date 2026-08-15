@@ -567,7 +567,7 @@ public class ArmorSet {
 			for (EquipmentSlot slot : SLOTS) {
 				ItemStack stack = entity.getItemBySlot(slot);
 				if (stack != null && stack.getItem() instanceof BlockArmorItem &&
-						((BlockArmorItem)stack.getItem()).set.setEffects.contains(effect))
+						CombinedArmorData.hasEffect(stack, effect))
 					ret.add(stack);
 			}
 		return ret;
@@ -791,15 +791,20 @@ public class ArmorSet {
 	}
 
 	/**Returns the active set effects of the armor that the entity is wearing to be cached every tick*/
-	private static HashSet<SetEffect> calculateWornSetEffects(LivingEntity entity) { 
+	/**
+	 * Calculates the effects from the entity's current equipment rather than the
+	 * per-tick cache.  Equipment attribute changes must use this live value: the
+	 * cache intentionally updates once per tick and can otherwise leave a set
+	 * attribute applied after a piece has been removed.
+	 */
+	public static HashSet<SetEffect> calculateWornSetEffects(LivingEntity entity) {
 		HashSet<SetEffect> effects = Sets.newHashSet();
 		HashMap<SetEffect, Integer> setCounts = Maps.newHashMap();
 		if (entity != null) {
 			for (EquipmentSlot slot : SLOTS) {
 				ItemStack stack = entity.getItemBySlot(slot);
 				if (stack != null && stack.getItem() instanceof BlockArmorItem) {
-					BlockArmorItem armor = (BlockArmorItem) stack.getItem();
-					for (SetEffect effect : armor.set.setEffects) {
+					for (SetEffect effect : CombinedArmorData.effects(stack)) {
 						if (effect.isEnabled()) {
 							int count = 1;
 							if (setCounts.containsKey(effect))

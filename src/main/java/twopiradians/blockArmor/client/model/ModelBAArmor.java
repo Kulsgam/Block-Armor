@@ -6,37 +6,47 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
-import java.util.List;
 import java.util.Map;
 import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.client.model.geom.ModelPart;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import twopiradians.blockArmor.mixin.ModelPartAccessor;
 import twopiradians.blockArmor.common.command.CommandDev;
 import java.awt.Color;
 
-/** The original Forge armor geometry, using a Fabric atlas-sprite vertex wrapper. */
+/** The original Forge armor geometry. */
 public final class ModelBAArmor extends HumanoidModel<LivingEntity> {
     private static final Field POLYGONS = findPolygonField();
     private final ModelPart waist;
     private final ModelPart rightFoot;
     private final ModelPart leftFoot;
-    private final TextureAtlasSprite sprite;
+    private final ResourceLocation texture;
     private final float red, green, blue;
     private LivingEntity entity;
 
     public ModelBAArmor(EquipmentSlot slot, TextureAtlasSprite sprite, int color) {
-        this(makeRoot(slot), slot, sprite, color);
+        this(slot, textureLocation(sprite.getName()), color);
     }
 
-    private ModelBAArmor(ModelPart root, EquipmentSlot slot, TextureAtlasSprite sprite, int color) {
+    public ModelBAArmor(EquipmentSlot slot, ResourceLocation texture, int color) {
+        this(makeRoot(slot), slot, texture, color);
+    }
+
+    private ModelBAArmor(ModelPart root, EquipmentSlot slot, ResourceLocation texture, int color) {
         super(root);
         this.waist = root.getChild("waist");
         this.rightFoot = root.getChild("right_foot");
         this.leftFoot = root.getChild("left_foot");
-        this.sprite = sprite;
+        // Forge rendered the source PNG directly.  Do the same here rather than
+        // wrapping the model UVs into the packed block atlas: some of the
+        // original plane coordinates intentionally sit outside 0..1, where an
+        // atlas wrapper would sample a completely unrelated sprite.
+        this.texture = texture;
         this.red = color < 0 ? 1 : ((color >> 16) & 255) / 255f;
         this.green = color < 0 ? 1 : ((color >> 8) & 255) / 255f;
         this.blue = color < 0 ? 1 : (color & 255) / 255f;
@@ -53,7 +63,8 @@ public final class ModelBAArmor extends HumanoidModel<LivingEntity> {
     @Override
     public void renderToBuffer(PoseStack pose, VertexConsumer consumer, int light, int overlay,
             float ignoredRed, float ignoredGreen, float ignoredBlue, float alpha) {
-        VertexConsumer wrapped = sprite.wrap(consumer);
+        VertexConsumer wrapped = Minecraft.getInstance().renderBuffers().bufferSource()
+                .getBuffer(RenderType.entityTranslucent(texture));
         float r=red,g=green,b=blue;
         Float[] dev = entity == null ? null : CommandDev.devColors.get(entity.getUUID());
         if (dev != null && dev[0]==0 && dev[1]==0 && dev[2]==0) {
@@ -70,6 +81,10 @@ public final class ModelBAArmor extends HumanoidModel<LivingEntity> {
     }
 
     public void setEntity(LivingEntity entity) { this.entity = entity; }
+
+    public static ResourceLocation textureLocation(ResourceLocation sprite) {
+        return new ResourceLocation(sprite.getNamespace(), "textures/" + sprite.getPath() + ".png");
+    }
 
     public void copyPose(HumanoidModel<LivingEntity> source) {
         source.copyPropertiesTo(this);

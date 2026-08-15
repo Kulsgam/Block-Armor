@@ -40,6 +40,7 @@ public class SetEffectImmovable extends SetEffect {
 	public String writeToString() {
 		return this.name+" ("+this.knockbackResistance+")";
 	}
+	@Override public double mergeStrength() { return knockbackResistance; }
 
 	/**Read an effect from this string in config (takes into account variables in parenthesis)*/
 	@Override

@@ -34,6 +34,6 @@ abstract class ItemStackMixin {
     private void blockarmor$configuredMaxDamage(CallbackInfoReturnable<Integer> cir) {
         ItemStack self = (ItemStack) (Object) this;
         if (self.getItem() instanceof BlockArmorItem armor)
-            cir.setReturnValue(armor.getConfiguredMaxDamage());
+            cir.setReturnValue(armor.getConfiguredMaxDamage(self));
     }
 }

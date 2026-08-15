@@ -194,7 +194,7 @@ public class SetEffect {
 		for (EquipmentSlot slot : ArmorSet.SLOTS) {
 			ItemStack stack = entity.getItemBySlot(slot);
 			if (stack != null && stack.getItem() instanceof BlockArmorItem && 
-					((BlockArmorItem)stack.getItem()).set.setEffects.contains(this))
+					twopiradians.blockArmor.common.item.CombinedArmorData.hasEffect(stack, this))
 				armor.add(stack);
 		}
 
@@ -227,7 +227,7 @@ public class SetEffect {
 			for (EquipmentSlot slot : ArmorSet.SLOTS) {
 				ItemStack stack = player.getItemBySlot(slot);
 				if (stack != null && stack.getItem() instanceof BlockArmorItem && 
-						((BlockArmorItem)stack.getItem()).set.setEffects.contains(this))
+						twopiradians.blockArmor.common.item.CombinedArmorData.hasEffect(stack, this))
 					player.getCooldowns().addCooldown(stack.getItem(), ticks);
 			}
 	}
@@ -304,18 +304,29 @@ public class SetEffect {
 	 * Sometimes doesn't update items that are removed because 
 	 * the event.to, event.from, and event.slot aren't always accurate*/
 	public static void onEquipmentChange(LivingEntity entity) {
-		HashSet<SetEffect> effects = ArmorSet.getWornSetEffects(entity);
+		// Do not use ArmorSet's once-per-tick cache here.  Vanilla only rebuilds
+		// equipment modifiers when equipment changes, while this mod gates set
+		// modifiers behind an ItemStack NBT flag.  If that flag changes a tick
+		// later, vanilla has nothing left to trigger a refresh.
+		HashSet<SetEffect> effects = ArmorSet.calculateWornSetEffects(entity);
 		for (EquipmentSlot slot : EquipmentSlot.values())
 			if (slot.getType() == Type.ARMOR) {
 				ItemStack stack = entity.getItemBySlot(slot);
 				if (stack != null && stack.getItem() instanceof BlockArmorItem) {
 					if (!stack.hasTag())
 						stack.setTag(new CompoundTag());
+					boolean wasWearingFullSet = stack.getTag().getBoolean("wearingFullSet");
+					boolean isWearingFullSet = effects.containsAll(twopiradians.blockArmor.common.item.CombinedArmorData.effects(stack));
+					if (wasWearingFullSet == isWearingFullSet) continue;
 
-					if (effects.containsAll(((BlockArmorItem)stack.getItem()).set.setEffects))
-						stack.getTag().putBoolean("wearingFullSet", true);
-					else
-						stack.getTag().putBoolean("wearingFullSet", false);
+					// Re-apply this exact equipment stack's modifiers around the NBT
+					// transition.  This is the Fabric equivalent of Forge's equipment
+					// change refresh and, importantly, removes Health Boost immediately.
+					if (!entity.level.isClientSide)
+						entity.getAttributes().removeAttributeModifiers(stack.getAttributeModifiers(slot));
+					stack.getTag().putBoolean("wearingFullSet", isWearingFullSet);
+					if (!entity.level.isClientSide)
+						entity.getAttributes().addTransientAttributeModifiers(stack.getAttributeModifiers(slot));
 				}
 			}
 	}
@@ -381,26 +392,21 @@ public class SetEffect {
 	/**Override so instances of classes are the same as SetEffect.INSTANCE*/
 	@Override
 	public boolean equals(Object obj) {
-		if (obj.getClass() == this.getClass()) {
-			for (int i=0; i<this.getDescriptionObjects().length; ++i)
-				if (i > ((SetEffect)obj).getDescriptionObjects().length || 
-						this.getDescriptionObjects()[i] != ((SetEffect)obj).getDescriptionObjects()[i])
-					return false;
-			return true;
-		}
-		return false;
+		return obj instanceof SetEffect effect && this.writeToString().equals(effect.writeToString());
 	}
 
 	/**Override so instances of classes are the same as SetEffect.INSTANCE*/
 	@Override
 	public int hashCode() {
-		return this.getClass().hashCode();
+		return this.writeToString().hashCode();
 	}
 
 	/**Write this effect to string for config (variables need to be included)*/
 	public String writeToString() {
 		return this.name;
 	}
+
+	public double mergeStrength() { return 0D; }
 
 	/**Read an effect from this string in config (takes into account variables in parenthesis)*/
 	public SetEffect readFromString(String str) throws Exception {

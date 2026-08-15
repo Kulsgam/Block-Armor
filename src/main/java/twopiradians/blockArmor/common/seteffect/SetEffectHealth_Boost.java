@@ -79,6 +79,7 @@ public class SetEffectHealth_Boost extends SetEffect {
 	public String writeToString() {
 		return this.name+" ("+this.healthBoost+")";
 	}
+	@Override public double mergeStrength() { return healthBoost; }
 
 	/**Read an effect from this string in config (takes into account variables in parenthesis)*/
 	@Override

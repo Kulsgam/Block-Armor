@@ -23,6 +23,7 @@ import twopiradians.blockArmor.common.BlockArmor;
 import twopiradians.blockArmor.common.item.BlockArmorItem;
 import twopiradians.blockArmor.common.item.ModItems;
 import twopiradians.blockArmor.common.item.ArmorSet;
+import twopiradians.blockArmor.common.item.CombinedArmorData;
 
 /** Composes the original Forge base/template/cover inventory icon at render time. */
 final class BlockArmorItemRenderer implements BuiltinItemRendererRegistry.DynamicItemRenderer {
@@ -49,25 +50,30 @@ final class BlockArmorItemRenderer implements BuiltinItemRendererRegistry.Dynami
         var atlas = Minecraft.getInstance().getModelManager().getAtlas(TextureAtlas.LOCATION_BLOCKS);
         TextureAtlasSprite base = atlas.getSprite(icon(type, "_base"));
         TextureAtlasSprite cover = atlas.getSprite(icon(type, "_cover"));
-        BlockArmorTextures.Info info = BlockArmorTextures.find(armor);
+        BlockArmorTextures.Info left = CombinedArmorData.isCombined(stack)
+                ? BlockArmorTextures.findSource(CombinedArmorData.source(stack, true), armor) : BlockArmorTextures.find(armor);
+        BlockArmorTextures.Info right = CombinedArmorData.isCombined(stack)
+                ? BlockArmorTextures.findSource(CombinedArmorData.source(stack, false), armor) : left;
         boolean[][][] masks = MASKS.computeIfAbsent(armor.getSlot(), BlockArmorItemRenderer::loadMasks);
         VertexConsumer vertex = ItemRenderer.getFoilBufferDirect(consumers,
                 RenderType.entityTranslucent(TextureAtlas.LOCATION_BLOCKS), true, stack.hasFoil());
         pose.pushPose();
         quad(pose, vertex, base, 0, 0, 16, 16, .4685f, 0xffffffff, light, overlay);
-        int color = info.color() < 0 ? 0xffffffff : 0xff000000 | info.color();
+        int leftColor = left.color() < 0 ? 0xffffffff : 0xff000000 | left.color();
+        int rightColor = right.color() < 0 ? 0xffffffff : 0xff000000 | right.color();
         for (int layer=0; layer<2; layer++) {
             boolean[][] mask = masks[layer];
             for (int y = 0; y < 16; y++) for (int x = 0; x < 16; x++) if (mask[y][x])
-                quad(pose, vertex, info.sprite(), x, 15 - y, x + 1, 16 - y, .4687f, color, light, overlay);
+                quad(pose, vertex, x < 8 ? left.sprite() : right.sprite(), x, 15 - y, x + 1, 16 - y, .4687f,
+                        x < 8 ? leftColor : rightColor, light, overlay);
         }
         quad(pose, vertex, cover, 0, 0, 16, 16, .4690f, 0xffffffff, light, overlay);
         backQuad(pose, vertex, base, 0, 0, 16, 16, .5315f, 0xffffffff, light, overlay);
         backQuad(pose, vertex, cover, 0, 0, 16, 16, .5310f, 0xffffffff, light, overlay);
-        addEdges(pose, vertex, info.sprite(), masks[0], color, light, overlay);
-        addEdges(pose, vertex, info.sprite(), masks[1], color, light, overlay);
-        addEdges(pose, vertex, base, masks[2], 0xffffffff, light, overlay);
-        addEdges(pose, vertex, cover, masks[3], 0xffffffff, light, overlay);
+        addEdges(pose, vertex, left, right, masks[0], light, overlay);
+        addEdges(pose, vertex, left, right, masks[1], light, overlay);
+        addEdges(pose, vertex, new BlockArmorTextures.Info(base, -1), new BlockArmorTextures.Info(base, -1), masks[2], light, overlay);
+        addEdges(pose, vertex, new BlockArmorTextures.Info(cover, -1), new BlockArmorTextures.Info(cover, -1), masks[3], light, overlay);
         pose.popPose();
     }
 
@@ -83,9 +89,11 @@ final class BlockArmorItemRenderer implements BuiltinItemRendererRegistry.Dynami
         vertex(out,p,x2/16f,y1/16f,z,r,g,b,a,sprite.getU(x2),sprite.getV(16-y1),light,overlay,0,0,-1);
     }
 
-    private static void addEdges(PoseStack pose, VertexConsumer out, TextureAtlasSprite sprite,
-            boolean[][] mask, int color, int light, int overlay) {
+    private static void addEdges(PoseStack pose, VertexConsumer out, BlockArmorTextures.Info left, BlockArmorTextures.Info right,
+            boolean[][] mask, int light, int overlay) {
         for (int y=0;y<16;y++) for (int x=0;x<16;x++) if (mask[y][x]) {
+            BlockArmorTextures.Info info = x < 8 ? left : right;
+            TextureAtlasSprite sprite = info.sprite(); int color = info.color() < 0 ? 0xffffffff : 0xff000000 | info.color();
             float x1=x/16f,x2=(x+1)/16f,y1=(15-y)/16f,y2=(16-y)/16f,z1=.4687f,z2=.5313f;
             if (x==0 || !mask[y][x-1]) edge(pose,out,sprite,x1,y1,z1,x1,y2,z2,color,light,overlay,-1,0,0);
             if (x==15 || !mask[y][x+1]) edge(pose,out,sprite,x2,y2,z1,x2,y1,z2,color,light,overlay,1,0,0);

@@ -17,9 +17,12 @@ import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.RedstoneLampBlock;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.item.ItemStack;
 import twopiradians.blockArmor.common.item.BlockArmorItem;
 import twopiradians.blockArmor.common.item.TextureOverrideInfo;
 import twopiradians.blockArmor.common.item.ArmorSet;
+import twopiradians.blockArmor.mixin.MinecraftItemColorsAccessor;
 
 final class BlockArmorTextures {
     record Info(TextureAtlasSprite sprite, int color) { }
@@ -34,6 +37,19 @@ final class BlockArmorTextures {
     static Info find(BlockArmorItem armor) {
         validate(armor.set);
         return CACHE.computeIfAbsent(armor, BlockArmorTextures::lookup).info();
+    }
+
+    /** Resolves a stored visual source. Non-Block Armor sources use their baked inventory sprite. */
+    static Info findSource(CompoundTag source, BlockArmorItem fallback) {
+        try {
+            ItemStack stack = ItemStack.of(source.getCompound("Stack"));
+            if (stack.isEmpty()) return find(fallback);
+            if (stack.getItem() instanceof BlockArmorItem armor) return find(armor);
+            var model = Minecraft.getInstance().getItemRenderer().getModel(stack, null, null, 0);
+            TextureAtlasSprite sprite = model.getParticleIcon();
+            int color = ((MinecraftItemColorsAccessor) (Object) Minecraft.getInstance()).blockarmor$getItemColors().getColor(stack, 0);
+            return new Info(sprite, color < 0 ? -1 : color);
+        } catch (RuntimeException ignored) { return find(fallback); }
     }
 
     static void clearCaches() {
