@@ -54,6 +54,7 @@ import twopiradians.blockArmor.utils.BlockUtils;
 
 @SuppressWarnings({ "deprecation" })
 public class ArmorSet {
+	private static final java.util.concurrent.atomic.AtomicLong CONFIG_REVISION = new java.util.concurrent.atomic.AtomicLong();
 
 	/**Used to add ItemStacks that will be approved for sets that would otherwise not be valid*/
 	private static final ArrayList<Block> MANUALLY_ADDED_SETS;
@@ -339,26 +340,26 @@ public class ArmorSet {
 	private ItemStack stack;
 	public Item item;
 	public Block block;
-	public BlockArmorMaterial material;      
+	public volatile BlockArmorMaterial material;
 	public BlockArmorItem helmet;
 	public BlockArmorItem chestplate;
 	public BlockArmorItem leggings;
 	public BlockArmorItem boots;
 	public boolean isFromModdedBlock;
-	public ArrayList<SetEffect> setEffects;
+	public volatile ArrayList<SetEffect> setEffects;
 	public ArrayList<SetEffect> defaultSetEffects;
 	public String modid;
 	public String registryName;
 	/**should only be modified through enable() and disable(); enabled = in creative tab and has recipe*/
-	private boolean enabled;
+	private volatile boolean enabled;
 	/**Only changed on client*/
 	public boolean missingTextures; 
 	// armor values calculated from block / config
-	public float armorDamageReduction;
-	public float armorToughness;
-	public int armorDurability;
-	public int armorEnchantability;
-	public int armorKnockbackResistance;
+	public volatile float armorDamageReduction;
+	public volatile float armorToughness;
+	public volatile int armorDurability;
+	public volatile int armorEnchantability;
+	public volatile int armorKnockbackResistance;
 
 	public ArmorSet(Item item) {
 		this.item = item.asItem();
@@ -747,6 +748,13 @@ public class ArmorSet {
 		}
 	}
 
+	/** Reconstruct the server cache before login-sensitive effects inspect it. */
+	public static void onLogin(Player player) {
+		HashMap<UUID, HashSet<SetEffect>> cache = getPlayerSetEffects(false);
+		cache.remove(player.getUUID());
+		updateWornSetEffects(cache, java.util.List.of(player));
+	}
+
 	/**Update player set effects each tick*/
 	public static void tickClient(List<? extends Player> players) {
 		updateWornSetEffects(getPlayerSetEffects(true), players);
@@ -760,6 +768,31 @@ public class ArmorSet {
 		updateWornSetEffects(getPlayerSetEffects(false), players);
 		for (Player player : players)
 			twopiradians.blockArmor.common.ArmorLifecycle.tickPlayer(player);
+	}
+
+	/**
+	 * Rebuild active effects and stack attribute markers immediately after a
+	 * live configuration change. Waiting for a later tick can leave gameplay
+	 * using the old piece threshold even though the UI already shows the new one.
+	 * Must be called from the server thread.
+	 */
+	public static void refreshConfiguredSetEffects(net.minecraft.server.MinecraftServer server) {
+		updateWornSetEffects(getPlayerSetEffects(false), server.getPlayerList().getPlayers());
+		long revision = CONFIG_REVISION.incrementAndGet();
+		for (net.minecraft.server.level.ServerPlayer player : server.getPlayerList().getPlayers()) {
+			for (EquipmentSlot slot : SLOTS) {
+				ItemStack stack = player.getItemBySlot(slot);
+				if (stack.getItem() instanceof BlockArmorItem) {
+					SetEffect.reconcileEnchantments(stack, player.level(), player);
+					// Make vanilla compare this stack against its pre-config snapshot on
+					// the next equipment pass, even when the physical item did not change.
+					net.minecraft.world.item.component.CustomData.update(
+							net.minecraft.core.component.DataComponents.CUSTOM_DATA, stack,
+							tag -> tag.putLong("BlockArmorConfigRevision", revision));
+					player.setItemSlot(slot, stack);
+				}
+			}
+		}
 	}
 
 	/**Update player set effects each tick for efficiency and onStart and onStop*/
@@ -798,9 +831,11 @@ public class ArmorSet {
 		HashSet<SetEffect> effects = Sets.newHashSet();
 		HashMap<SetEffect, Integer> setCounts = Maps.newHashMap();
 		if (entity != null) {
+			java.util.ArrayList<ItemStack> worn = new java.util.ArrayList<>();
 			for (EquipmentSlot slot : SLOTS) {
 				ItemStack stack = entity.getItemBySlot(slot);
 				if (stack != null && stack.getItem() instanceof BlockArmorItem) {
+					worn.add(stack);
 					for (SetEffect effect : CombinedArmorData.effects(stack)) {
 						if (effect.isEnabled()) {
 							int count = 1;
@@ -814,6 +849,32 @@ public class ArmorSet {
 			for (SetEffect effect : setCounts.keySet())
 				if (setCounts.get(effect) >= Config.piecesForSet) 
 					effects.add(effect);
+
+			// A combined piece carries effects from independent source sets. Each
+			// carried effect therefore earns activation independently when enough
+			// equipped pieces provide that effect type, including the combined item.
+			java.util.HashMap<Class<?>, SetEffect> qualifiedCombined = new java.util.HashMap<>();
+			for (ItemStack combined : worn) {
+				if (!CombinedArmorData.isCombined(combined)) continue;
+				for (SetEffect carried : CombinedArmorData.effects(combined)) {
+					if (!carried.isEnabled()) continue;
+					int matchingPieces = 0;
+					for (ItemStack candidate : worn) {
+						boolean matches = CombinedArmorData.effects(candidate).stream()
+								.anyMatch(effect -> effect.isEnabled() && effect.getClass() == carried.getClass());
+						if (matches) matchingPieces++;
+					}
+					if (matchingPieces >= Config.piecesForSet) {
+						SetEffect existing = qualifiedCombined.get(carried.getClass());
+						if (existing == null || carried.mergeStrength() > existing.mergeStrength())
+							qualifiedCombined.put(carried.getClass(), carried);
+					}
+				}
+			}
+			for (SetEffect carried : qualifiedCombined.values()) {
+				effects.removeIf(effect -> effect.getClass() == carried.getClass());
+				effects.add(carried);
+			}
 		}
 		return effects;
 	}

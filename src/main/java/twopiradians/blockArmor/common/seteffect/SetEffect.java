@@ -338,14 +338,23 @@ public class SetEffect {
 			if (slot.getType() == Type.HUMANOID_ARMOR) {
 				ItemStack stack = entity.getItemBySlot(slot);
 				if (stack != null && stack.getItem() instanceof BlockArmorItem) {
-					boolean wasWearingFullSet = customBoolean(stack, "wearingFullSet");
-					boolean isWearingFullSet = effects.containsAll(twopiradians.blockArmor.common.item.CombinedArmorData.effects(stack));
-					if (wasWearingFullSet == isWearingFullSet) continue;
+					boolean changed = false;
+					if (customBoolean(stack, "wearingFullSet")) {
+						setCustomBoolean(stack, "wearingFullSet", false);
+						changed = true;
+					}
+					for (SetEffect stackEffect : twopiradians.blockArmor.common.item.CombinedArmorData.effects(stack)) {
+						String key = activeKey(stackEffect);
+						boolean active = effects.contains(stackEffect);
+						if (customBoolean(stack, key) != active) {
+							setCustomBoolean(stack, key, active);
+							changed = true;
+						}
+					}
+					if (!changed) continue;
 
-					// Re-apply this exact equipment stack's modifiers around the NBT
-					// transition.  This is the Fabric equivalent of Forge's equipment
-					// change refresh and, importantly, removes Health Boost immediately.
-					setCustomBoolean(stack, "wearingFullSet", isWearingFullSet);
+					// Re-apply this exact equipment stack's modifiers around the
+					// per-effect state transition.
 					// Re-equipping the stack makes the component-era equipment system
 					// rebuild its attribute modifiers after the set-state transition.
 					if (!entity.level().isClientSide()) entity.setItemSlot(slot, stack);
@@ -357,12 +366,17 @@ public class SetEffect {
 	public Multimap<Attribute, AttributeModifier> getAttributeModifiers(Multimap<Attribute, AttributeModifier> map,
 			EquipmentSlot slot, ItemStack stack) {
 
-		if (customBoolean(stack, "wearingFullSet")) {
+		if (customBoolean(stack, activeKey(this))) {
 			for (Attribute attribute : this.attributes.keySet())
 				map.put(attribute, this.attributes.get(attribute));
 		}
 
 		return map;
+	}
+
+	private static String activeKey(SetEffect effect) {
+		return "BlockArmorActiveEffect_" + effect.getClass().getName().replace('.', '_') + "_"
+				+ Integer.toUnsignedString(effect.writeToString().hashCode());
 	}
 
 	/**Set effect name and description if shifting*/

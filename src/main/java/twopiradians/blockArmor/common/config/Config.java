@@ -24,13 +24,16 @@ public final class Config {
     // defaults are the source of truth unless the user edits them again after
     // this migration.
     private static final String CONFIG_VERSION = "1.3";
-    public static int piecesForSet = 2;
-    public static boolean effectsUseDurability = false;
-    public static double globalToughnessModifier = 1D;
-    public static double globalEnchantabilityModifier = 1D;
-    public static double globalDamageReductionModifier = 1D;
-    public static double globalKnockbackResistanceModifier = 1D;
-    public static double globalDurabilityModifier = 1D;
+    // Read by both the render/client thread and the integrated-server thread.
+    // Config screens publish changes on the server executor, but the client UI
+    // and tooltips must observe the same authoritative value immediately.
+    public static volatile int piecesForSet = 2;
+    public static volatile boolean effectsUseDurability = false;
+    public static volatile double globalToughnessModifier = 1D;
+    public static volatile double globalEnchantabilityModifier = 1D;
+    public static volatile double globalDamageReductionModifier = 1D;
+    public static volatile double globalKnockbackResistanceModifier = 1D;
+    public static volatile double globalDurabilityModifier = 1D;
 
     private static final Path FILE = FabricLoader.getInstance().getConfigDir().resolve("blockarmor.properties");
     private static Properties loadedValues = new Properties();

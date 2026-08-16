@@ -22,16 +22,15 @@ final class ConfigScreenSupport {
         if (integratedServer != null) {
             integratedServer.execute(() -> {
                 mutation.run();
-                for (ArmorSet set : ArmorSet.allSets) set.createMaterial();
                 Config.saveCurrent();
-                CommonProxy.refreshRecipes(integratedServer);
-                for (net.minecraft.server.level.ServerPlayer player : integratedServer.getPlayerList().getPlayers())
-                    BlockArmor.NETWORK.sendConfig(player);
+                CommonProxy.refreshAfterConfigChange(integratedServer);
+                client.execute(() -> twopiradians.blockArmor.client.BlockArmorClientCaches.invalidate(client));
             });
         } else if (client.getConnection() == null) {
             mutation.run();
             for (ArmorSet set : ArmorSet.allSets) set.createMaterial();
             Config.saveCurrent();
+            twopiradians.blockArmor.client.BlockArmorClientCaches.invalidate(client);
         }
     }
 

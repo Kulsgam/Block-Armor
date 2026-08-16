@@ -60,7 +60,9 @@ final class BlockArmorRenderer implements ArmorRenderer {
                     RenderTypes.armorTranslucent(BlockArmorTextures.sourceTexture(left)),
                     light, overlay, colorArgb(color), null, 0, null);
         }
-        if (BlockArmorItem.hasRealEnchantment(stack) || BlockArmorClientConfig.alwaysShowArmorGlint) {
+        // Match EquipmentLayerRenderer: hasFoil() is the vanilla/mod-overridable
+        // decision point and armorEntityGlint() supplies the native animated pass.
+        if (stack.hasFoil() || BlockArmorClientConfig.alwaysShowArmorGlint) {
             ArmorRenderer.submitTransformCopyingModel(model, state, custom, state, false, nodes.order(1), matrices,
                     RenderTypes.armorEntityGlint(), light, overlay, colorArgb(color), null, 0, null);
         }

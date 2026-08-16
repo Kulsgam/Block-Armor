@@ -58,7 +58,10 @@ public final class BlockArmorFabricClient implements ClientModInitializer {
     private static final class ConfigReload {
         static void restore(net.minecraft.client.Minecraft client) {
             if (client.getSingleplayerServer() == null)
-                client.execute(twopiradians.blockArmor.common.config.Config::reload);
+                client.execute(() -> {
+                    twopiradians.blockArmor.common.config.Config.reload();
+                    BlockArmorClientCaches.invalidate(client);
+                });
         }
     }
 
@@ -75,6 +78,7 @@ public final class BlockArmorFabricClient implements ClientModInitializer {
                     if (client.getSingleplayerServer() != null) return;
                     SConfigSyncPacket.decode(new net.minecraft.network.FriendlyByteBuf(
                             io.netty.buffer.Unpooled.wrappedBuffer(bytes)));
+                    BlockArmorClientCaches.invalidate(client);
                 } catch (RuntimeException exception) {
                     twopiradians.blockArmor.common.BlockArmor.LOGGER.warn(
                             "Rejected invalid server configuration snapshot", exception);

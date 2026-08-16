@@ -58,6 +58,14 @@ public final class CommonProxy {
 
     public static void refreshRecipes(MinecraftServer server) { registerRecipes(server.getRecipeManager()); }
 
+    /** Rebuild every derived value after either a GUI edit or a disk reload. */
+    public static void refreshAfterConfigChange(MinecraftServer server) {
+        for (ArmorSet set : ArmorSet.allSets) set.createMaterial();
+        ArmorSet.refreshConfiguredSetEffects(server);
+        refreshRecipes(server);
+        for (ServerPlayer player : server.getPlayerList().getPlayers()) BlockArmor.NETWORK.sendConfig(player);
+    }
+
     private static Identifier id(net.minecraft.world.item.Item item) {
         return net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(item);
     }

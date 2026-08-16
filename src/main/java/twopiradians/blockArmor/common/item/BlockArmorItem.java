@@ -41,8 +41,8 @@ public class BlockArmorItem extends Item {
     public final ArmorSet set;
     public final EquipmentSlot slot;
     private static final ThreadLocal<LivingEntity> DAMAGE_CONTEXT = new ThreadLocal<>();
-    private BlockArmorMaterial material;
-    private HashMultimap<Attribute, AttributeModifier> attributes = HashMultimap.create();
+    private volatile BlockArmorMaterial material;
+    private volatile HashMultimap<Attribute, AttributeModifier> attributes = HashMultimap.create();
 
     public BlockArmorItem(BlockArmorMaterial material, EquipmentSlot slot, ArmorSet set, Identifier id) {
         super(new Item.Properties().setId(ResourceKey.create(Registries.ITEM, id))
@@ -146,13 +146,14 @@ public class BlockArmorItem extends Item {
 
     public void setMaterial(BlockArmorMaterial material) {
         this.material = material;
-        attributes = HashMultimap.create();
+        HashMultimap<Attribute, AttributeModifier> rebuilt = HashMultimap.create();
         Identifier id = Identifier.fromNamespaceAndPath("blockarmor", "armor/" + slot.getName());
-        attributes.put(Attributes.ARMOR.value(), new AttributeModifier(id, getDefense(), AttributeModifier.Operation.ADD_VALUE));
-        attributes.put(Attributes.ARMOR_TOUGHNESS.value(), new AttributeModifier(id, getToughness(), AttributeModifier.Operation.ADD_VALUE));
-        if (material.getKnockbackResistance() > 0) attributes.put(Attributes.KNOCKBACK_RESISTANCE.value(),
+        rebuilt.put(Attributes.ARMOR.value(), new AttributeModifier(id, getDefense(), AttributeModifier.Operation.ADD_VALUE));
+        rebuilt.put(Attributes.ARMOR_TOUGHNESS.value(), new AttributeModifier(id, getToughness(), AttributeModifier.Operation.ADD_VALUE));
+        if (material.getKnockbackResistance() > 0) rebuilt.put(Attributes.KNOCKBACK_RESISTANCE.value(),
                 new AttributeModifier(id, material.getKnockbackResistance() / 10D * Config.globalKnockbackResistanceModifier,
                         AttributeModifier.Operation.ADD_VALUE));
+        attributes = rebuilt;
     }
 
     public static boolean hasRealEnchantment(ItemStack stack) { return CombinedArmorData.hasRealEnchantments(stack); }

@@ -17,9 +17,6 @@ final class BlockArmorResourceReload implements SimpleSynchronousResourceReloadL
     }
 
     @Override public void onResourceManagerReload(ResourceManager manager) {
-        BlockArmorItemRenderer.clearCaches();
-        BlockArmorRenderer.clearCaches();
-        BlockArmorTextures.clearCaches();
-        BlockArmorClientDiagnostics.reset();
+        BlockArmorClientCaches.invalidate(net.minecraft.client.Minecraft.getInstance());
     }
 }

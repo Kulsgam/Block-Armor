@@ -65,6 +65,11 @@ final class BlockArmorItemRenderer implements ItemModel {
         state.appendModelIdentityElement(stack.getOrDefault(
                 net.minecraft.core.component.DataComponents.CUSTOM_DATA,
                 net.minecraft.world.item.component.CustomData.EMPTY));
+        // Enchanting an existing stack must invalidate the cached item render
+        // state so its foil layer appears immediately in inventories and GUIs.
+        state.appendModelIdentityElement(stack.getOrDefault(
+                net.minecraft.core.component.DataComponents.ENCHANTMENTS,
+                net.minecraft.world.item.enchantment.ItemEnchantments.EMPTY));
         boolean split = CombinedArmorData.isCombined(stack);
         BlockArmorTextures.Info left = split
                 ? BlockArmorTextures.findSource(CombinedArmorData.source(stack, true), armor)
@@ -82,9 +87,16 @@ final class BlockArmorItemRenderer implements ItemModel {
         layer.setLocalTransform(transformation);
         layer.setParticleMaterial(new Material.Baked(left.sprite(), false));
         properties.applyToLayer(layer, display);
-        if (BlockArmorItem.hasRealEnchantment(stack)
-                || twopiradians.blockArmor.client.config.BlockArmorClientConfig.alwaysShowArmorGlint)
+        boolean foil = stack.hasFoil()
+                || twopiradians.blockArmor.client.config.BlockArmorClientConfig.alwaysShowArmorGlint;
+        if (foil) {
             layer.setFoilType(ItemStackRenderState.FoilType.STANDARD);
+            // CuboidItemModelWrapper does both of these for vanilla items. The
+            // animated flag prevents the extracted GUI state from freezing the
+            // glint at a single texture transform.
+            state.setAnimated();
+            state.appendModelIdentityElement(ItemStackRenderState.FoilType.STANDARD);
+        }
         if (left.sprite().contents().isAnimated() || right.sprite().contents().isAnimated()) state.setAnimated();
     }
 

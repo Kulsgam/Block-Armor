@@ -41,9 +41,7 @@ public final class BlockArmorFabric implements ModInitializer {
                     .requires(source -> net.minecraft.commands.Commands.LEVEL_GAMEMASTERS.check(source.permissions()))
                     .then(net.minecraft.commands.Commands.literal("reload").executes(context -> {
                         Config.reload();
-                        CommonProxy.refreshRecipes(context.getSource().getServer());
-                        for (net.minecraft.server.level.ServerPlayer player : context.getSource().getServer().getPlayerList().getPlayers())
-                            BlockArmor.NETWORK.sendConfig(player);
+                        CommonProxy.refreshAfterConfigChange(context.getSource().getServer());
                         context.getSource().sendSuccess(() -> net.minecraft.network.chat.Component.literal("Block Armor configuration reloaded"), true);
                         return 1;
                     })));
@@ -55,6 +53,7 @@ public final class BlockArmorFabric implements ModInitializer {
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) ->
                 {
                     CommonProxy.onPlayerJoin(handler.player);
+					ArmorSet.onLogin(handler.player);
                     SetEffectHealth_Boost.onLogin(handler.player);
                 });
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
