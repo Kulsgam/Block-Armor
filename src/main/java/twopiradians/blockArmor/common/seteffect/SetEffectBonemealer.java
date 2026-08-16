@@ -29,8 +29,8 @@ public class SetEffectBonemealer extends SetEffect {
 	public void onArmorTick(Level world, Player player, ItemStack stack) {
 		super.onArmorTick(world, player, stack);
 
-		if (!world.isClientSide && ArmorSet.getFirstSetItem(player, this) == stack &&
-				BlockArmor.key.isKeyDown(player) && !player.getCooldowns().isOnCooldown(stack.getItem())) {
+		if (!world.isClientSide() && ArmorSet.getFirstSetItem(player, this) == stack &&
+				BlockArmor.key.isKeyDown(player) && !player.getCooldowns().isOnCooldown(stack)) {
 			int radius = 2;
 			ArrayList<BlockPos> bonemealed = new ArrayList<BlockPos>();
 			for (int x=-radius; x<radius; x++)
@@ -45,7 +45,7 @@ public class SetEffectBonemealer extends SetEffect {
 					((ServerLevel)world).sendParticles(ParticleTypes.HAPPY_VILLAGER, 
 							pos.getX(), pos.getY()+1d, pos.getZ(), 10, 2, 0.1d, 2, 0);
 				world.playSound(null, player.blockPosition(), SoundEvents.HOE_TILL, 
-						SoundSource.PLAYERS, 0.5f, world.random.nextFloat()+0.5f);
+						SoundSource.PLAYERS, 0.5f, world.getRandom().nextFloat()+0.5f);
 				this.damageArmor(player, 4, false);
 			}
 			else

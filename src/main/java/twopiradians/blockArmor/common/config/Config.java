@@ -19,7 +19,11 @@ import twopiradians.blockArmor.common.seteffect.SetEffect;
  * old option names stable while avoiding a Forge configuration dependency.
  */
 public final class Config {
-    private static final String CONFIG_VERSION = "1.1";
+    // 1.1 builds could persist incomplete effect lists produced during the
+    // initial 26.1 port.  Never carry those lists forward: the Forge-derived
+    // defaults are the source of truth unless the user edits them again after
+    // this migration.
+    private static final String CONFIG_VERSION = "1.3";
     public static int piecesForSet = 2;
     public static boolean effectsUseDurability = false;
     public static double globalToughnessModifier = 1D;
@@ -45,7 +49,7 @@ public final class Config {
         boolean oldVersion = fabricFileExisted && !CONFIG_VERSION.equals(values.getProperty("Config version"));
         if (oldVersion) values.keySet().removeIf(key -> key.toString().endsWith(".Set_Effects"));
         piecesForSet = integer(values, "Armor pieces required for Set Effects", 2, 1, 4);
-        effectsUseDurability = Boolean.parseBoolean(values.getProperty("Set Effects use durability", "false"));
+        effectsUseDurability = bool(values, "Set Effects use durability", false);
         if (!values.containsKey("Global Toughness Modifier") && values.containsKey("Global Tougness Modifier"))
             values.setProperty("Global Toughness Modifier", values.getProperty("Global Tougness Modifier"));
         globalToughnessModifier = decimal(values, "Global Toughness Modifier", 1D);
@@ -64,8 +68,19 @@ public final class Config {
     }
 
     private static double decimal(Properties values, String key, double fallback) {
-        try { return Math.max(0D, Double.parseDouble(values.getProperty(key, String.valueOf(fallback)))); }
+        try {
+            double value = Double.parseDouble(values.getProperty(key, String.valueOf(fallback)));
+            return Double.isFinite(value) ? Math.max(0D, Math.min(999999D, value)) : fallback;
+        }
         catch (NumberFormatException ignored) { return fallback; }
+    }
+
+    private static boolean bool(Properties values, String key, boolean fallback) {
+        String value = values.getProperty(key);
+        if (value == null) return fallback;
+        if (value.equalsIgnoreCase("true")) return true;
+        if (value.equalsIgnoreCase("false")) return false;
+        return fallback;
     }
 
     private static void save(Properties existing) {
@@ -130,7 +145,7 @@ public final class Config {
 
     private static void applyGlobals(Properties values) {
         piecesForSet = integer(values, "Armor pieces required for Set Effects", piecesForSet, 1, 4);
-        effectsUseDurability = Boolean.parseBoolean(values.getProperty("Set Effects use durability", String.valueOf(effectsUseDurability)));
+        effectsUseDurability = bool(values, "Set Effects use durability", effectsUseDurability);
         globalToughnessModifier = decimal(values, "Global Toughness Modifier", globalToughnessModifier);
         globalEnchantabilityModifier = decimal(values, "Global Enchantability Modifier", globalEnchantabilityModifier);
         globalDamageReductionModifier = decimal(values, "Global Damage Reduction Modifier", globalDamageReductionModifier);
@@ -178,15 +193,19 @@ public final class Config {
         set.armorEnchantability = integer(values, prefix + "Armor_Enchantability", set.armorEnchantability, 0, Integer.MAX_VALUE);
         String effectList = values.getProperty(prefix + "Set_Effects", set.defaultSetEffects.stream()
                 .map(SetEffect::writeToString).collect(Collectors.joining(";")));
-        set.setEffects.clear();
+        ArrayList<SetEffect> configuredEffects = new ArrayList<>();
         for (String text : effectList.split(";")) {
             if (text.isBlank()) continue;
             SetEffect effect = SetEffect.getEffectFromString(text.trim());
-            if (effect != null) set.setEffects.add(effect);
+            if (effect != null) configuredEffects.add(effect);
             else BlockArmor.LOGGER.warn("Invalid set effect '{}' for {}", text, set.registryName);
         }
+        // Armor-set data is shared by the logical client and server in an
+        // integrated game. Publish a complete replacement so a server tick can
+        // never observe this list while it is being cleared and repopulated.
+        set.setEffects = configuredEffects;
         set.createMaterial();
-        boolean enabled = Boolean.parseBoolean(values.getProperty(prefix + "Enabled", "true"));
+        boolean enabled = bool(values, prefix + "Enabled", true);
         if (enabled) set.enable(); else set.disable();
     }
 
@@ -271,8 +290,10 @@ public final class Config {
             set.armorToughness = update.toughness;
             set.armorKnockbackResistance = update.knockback;
             set.armorEnchantability = update.enchantability;
-            set.setEffects.clear();
-            set.setEffects.addAll(update.effects);
+            // Do not mutate the list currently being traversed by gameplay code.
+            // This matters in integrated games, where client and server threads
+            // share the static ArmorSet instances.
+            set.setEffects = new ArrayList<>(update.effects);
             set.createMaterial();
             if (update.enabled) set.enable(); else set.disable();
         }

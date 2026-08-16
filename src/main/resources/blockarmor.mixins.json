@@ -2,7 +2,7 @@
   "required": true,
   "minVersion": "0.8",
   "package": "twopiradians.blockArmor.mixin",
-  "compatibilityLevel": "JAVA_17",
+  "compatibilityLevel": "JAVA_25",
   "mixins": [
     "LivingEntityMixin",
     "ItemStackMixin",
@@ -10,18 +10,21 @@
     "ItemCooldownsAccessor",
     "CooldownInstanceAccessor",
     "EntityWaterStateAccessor",
-    "LootTableMixin",
     "EnchantmentHelperMixin",
+    "LootTableMixin",
     "AbstractContainerMenuAccessor",
     "RecipeManagerAccessor",
     "AnvilMenuMixin",
     "ItemCombinerMenuAccessor"
   ],
   "client": [
-    "ModelPartAccessor",
-    "TextureAtlasSpriteAccessor",
     "ClientPacketListenerMixin",
-    "MinecraftItemColorsAccessor"
+    "CuboidItemModelWrapperAccessor",
+    "ModelPartAccessor",
+    "SpriteContentsAccessor",
+    "LivingEntityRenderStateMixin",
+    "LivingEntityRendererMixin",
+    "ItemStackRenderStateAccessor"
   ],
   "injectors": { "defaultRequire": 1 }
 }

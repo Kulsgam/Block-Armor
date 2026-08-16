@@ -1,7 +1,8 @@
 package twopiradians.blockArmor.common.item;
 
+import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
+import java.util.function.Consumer;
 
 import org.jetbrains.annotations.Nullable;
 
@@ -9,12 +10,10 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 
 import net.minecraft.ChatFormatting;
-import net.minecraft.core.NonNullList;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.TextComponent;
-import net.minecraft.network.chat.TranslatableComponent;
+import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
@@ -23,226 +22,138 @@ import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.ArmorItem;
-import net.minecraft.world.item.ArmorMaterial;
-import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Rarity;
+import net.minecraft.world.item.Item.TooltipContext;
 import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.item.component.TooltipDisplay;
+import net.minecraft.world.item.equipment.Equippable;
 import net.minecraft.world.level.Level;
+import net.minecraft.server.level.ServerLevel;
+import twopiradians.blockArmor.common.ClientTooltipState;
 import twopiradians.blockArmor.common.command.CommandDev;
 import twopiradians.blockArmor.common.config.Config;
 import twopiradians.blockArmor.common.seteffect.SetEffect;
-import twopiradians.blockArmor.creativetab.BlockArmorCreativeTab;
-import twopiradians.blockArmor.common.ClientTooltipState;
 
-public class BlockArmorItem extends ArmorItem {
-	public static boolean hasRealEnchantment(ItemStack stack) {
-		ListTag enchantments = stack.getEnchantmentTags();
-		for (int i=0;i<enchantments.size();i++)
-			if (!enchantments.getCompound(i).getBoolean(twopiradians.blockArmor.common.BlockArmor.MODID+" enchant")) return true;
-		return false;
-	}
-	/** Copied from ArmorItem bc private */
-	private static final UUID[] ARMOR_MODIFIERS = new UUID[] { UUID.fromString("845DB27C-C624-495F-8C9F-6020A9A58B6B"),
-			UUID.fromString("D8499B04-0E66-4726-AB29-64469D734E0D"),
-			UUID.fromString("9F3D476D-C118-4544-8365-64846904B48E"),
-			UUID.fromString("2AD3F246-FEE1-4E67-B886-69FD380BB150") };
-	/** The ArmorSet that this item belongs to */
-	public ArmorSet set;
-	/** Creative tab/group for this item (bc Item.group is final) */
-	@Nullable
-	public CreativeModeTab group;
-	/** Armor material (bc ArmorItem.material is final) */
-	private ArmorMaterial material;
-	private HashMultimap<Attribute, AttributeModifier> attributes;
+/** Generated equippable item for one slot of an ArmorSet. */
+public class BlockArmorItem extends Item {
 
-	public BlockArmorItem(BlockArmorMaterial material, EquipmentSlot slot, ArmorSet set) {
-		super(material, slot, new Item.Properties().tab(set.isFromModdedBlock ? BlockArmorCreativeTab.moddedTab : BlockArmorCreativeTab.vanillaTab).durability(material.getDurabilityForSlot(slot)));
-		this.set = set;
-		this.group = set.isEnabled() ? (set.isFromModdedBlock ? BlockArmorCreativeTab.moddedTab : BlockArmorCreativeTab.vanillaTab) : null;
-		this.setMaterial(material);
-	}
+    public final ArmorSet set;
+    public final EquipmentSlot slot;
+    private static final ThreadLocal<LivingEntity> DAMAGE_CONTEXT = new ThreadLocal<>();
+    private BlockArmorMaterial material;
+    private HashMultimap<Attribute, AttributeModifier> attributes = HashMultimap.create();
 
-	/** Don't display item in creative tab/JEI if disabled */
-	@Override
-	public void fillItemCategory(CreativeModeTab group, NonNullList<ItemStack> items) {
-		if (!set.isEnabled())
-			return;
-		else
-			super.fillItemCategory(group, items);
-	}
+    public BlockArmorItem(BlockArmorMaterial material, EquipmentSlot slot, ArmorSet set, Identifier id) {
+        super(new Item.Properties().setId(ResourceKey.create(Registries.ITEM, id))
+                .component(net.minecraft.core.component.DataComponents.EQUIPPABLE,
+                Equippable.builder(slot).build())
+                .durability(Math.max(1, material.getDurabilityForSlot(slot)))
+                .enchantable(Math.max(0, material.getEnchantmentValue())));
+        this.set = set;
+        this.slot = slot;
+        setMaterial(material);
+    }
 
-	@Override protected boolean allowdedIn(CreativeModeTab group) {
-		return set.isEnabled() && group != null && (group == CreativeModeTab.TAB_SEARCH || group == this.group);
-	}
+    public EquipmentSlot getSlot() { return slot; }
+    public BlockArmorMaterial getMaterial() { return material; }
+    public int getDefense() { return (int) (material.getDefenseForSlot(slot) * Config.globalDamageReductionModifier); }
+    public float getToughness() { return (float) (material.getToughness() * Config.globalToughnessModifier); }
+    public int getEnchantmentValue() { return (int) (material.getEnchantmentValue() * Config.globalEnchantabilityModifier); }
+    public int getConfiguredMaxDamage() { return Math.max(1, (int) (material.getDurabilityForSlot(slot) * Config.globalDurabilityModifier)); }
+    public int getConfiguredMaxDamage(ItemStack stack) { return CombinedArmorData.maxDamage(stack, getConfiguredMaxDamage()); }
 
-	public void setGroup(CreativeModeTab group) {
-		this.group = group;
-	}
+    public void beforeDamageChanged(ItemStack stack, int oldDamage, int damage) {
+        beforeDamageChanged(stack, oldDamage, damage, DAMAGE_CONTEXT.get());
+    }
 
-	public void beforeDamageChanged(ItemStack stack, int oldDamage, int damage) {
-		if (oldDamage < stack.getMaxDamage() && damage >= stack.getMaxDamage()
-				&& CombinedArmorData.hasEffect(stack, SetEffect.HOARDER))
-			SetEffect.HOARDER.onBreak(stack);
-	}
+    public void beforeDamageChanged(ItemStack stack, int oldDamage, int damage, @Nullable LivingEntity entity) {
+        if (oldDamage < getConfiguredMaxDamage(stack) && damage >= getConfiguredMaxDamage(stack)
+                && CombinedArmorData.hasEffect(stack, SetEffect.HOARDER)) {
+            if (entity != null) SetEffect.HOARDER.onBreak(stack, entity);
+            else SetEffect.HOARDER.onBreak(stack);
+        }
+    }
 
-	/** Maximum damage must remain config-driven after registry construction. */
-	public int getConfiguredMaxDamage() {
-		return Math.max(0, (int) (material.getDurabilityForSlot(slot) * Config.globalDurabilityModifier));
-	}
-	public int getConfiguredMaxDamage(ItemStack stack) { return CombinedArmorData.maxDamage(stack, getConfiguredMaxDamage()); }
-	public Multimap<Attribute, AttributeModifier> baseAttributes(EquipmentSlot requestedSlot) {
-		return requestedSlot == this.slot ? HashMultimap.create(this.attributes) : HashMultimap.create();
-	}
+    public static void beginDamageContext(@Nullable LivingEntity entity) { DAMAGE_CONTEXT.set(entity); }
 
-	/** Change display name based on the block */
-	@Override
-	public Component getName(ItemStack stack) {
-		return ArmorSet.getItemStackDisplayName(stack.getItem(), this.getSlot());
-	}
+    public static void endDamageContext() { DAMAGE_CONTEXT.remove(); }
 
-	/** Handles the attributes when wearing an armor set */
-	public Multimap<Attribute, AttributeModifier> getAttributeModifiers(EquipmentSlot slot, ItemStack stack) {
-		Multimap<Attribute, AttributeModifier> map = baseAttributes(slot);
-		if (slot != this.slot)
-			return map;
+    @Nullable
+    public static LivingEntity currentDamageContext() { return DAMAGE_CONTEXT.get(); }
 
-		map = CombinedArmorData.attributes(stack, slot, map);
-		for (SetEffect effect : CombinedArmorData.effects(stack))
-			map = effect.getAttributeModifiers(map, slot, stack);
+    public Multimap<Attribute, AttributeModifier> baseAttributes(EquipmentSlot requestedSlot) {
+        return requestedSlot == slot ? HashMultimap.create(attributes) : HashMultimap.create();
+    }
 
-		return map;
-	}
+    public Multimap<Attribute, AttributeModifier> getAttributeModifiers(EquipmentSlot requestedSlot, ItemStack stack) {
+        Multimap<Attribute, AttributeModifier> map = baseAttributes(requestedSlot);
+        if (requestedSlot != slot) return map;
+        map = CombinedArmorData.attributes(stack, requestedSlot, map);
+        for (SetEffect effect : CombinedArmorData.effects(stack)) map = effect.getAttributeModifiers(map, requestedSlot, stack);
+        return map;
+    }
 
-	/** Set to have tooltip color show if item has effect */
-	@Override
-	public Rarity getRarity(ItemStack stack) {
-		if (stack.isEnchanted())
-			return Rarity.RARE;
-		else if (!CombinedArmorData.effects(stack).isEmpty())
-			return Rarity.UNCOMMON;
-		else
-			return Rarity.COMMON;
-	}
+    @Override public Component getName(ItemStack stack) { return ArmorSet.getItemStackDisplayName(stack.getItem(), slot); }
 
-	/** Deals with armor tooltips */
-	@Override
-	public void appendHoverText(ItemStack stack, @Nullable Level worldIn, List<Component> tooltip,
-			TooltipFlag flagIn) {
-		if (stack.hasTag() && stack.getTag().contains("devSpawned"))
-			tooltip.add(new TextComponent(ChatFormatting.DARK_PURPLE + "" + ChatFormatting.BOLD + "Dev Spawned"));
+    @Override
+    public void appendHoverText(ItemStack stack, TooltipContext context, TooltipDisplay display,
+            Consumer<Component> tooltip, TooltipFlag flag) {
+        if (CombinedArmorData.isDevSpawned(stack)) tooltip.accept(Component.literal("Dev Spawned").withStyle(ChatFormatting.DARK_PURPLE, ChatFormatting.BOLD));
+        boolean expanded = ClientTooltipState.isShiftDown();
+        List<SetEffect> effects = CombinedArmorData.effects(stack);
+        if (!effects.isEmpty() && effects.getFirst().isEnabled()) {
+            if (expanded) tooltip.accept(Component.translatable("item.blockarmor.tooltip.setEffects",
+                    Component.translatable("item.blockarmor.tooltip.setEffectsRequire" + (Config.piecesForSet == 4 ? "" : "+"), Config.piecesForSet)
+                            .withStyle(ChatFormatting.ITALIC), Config.piecesForSet).withStyle(ChatFormatting.GOLD));
+            for (SetEffect effect : effects) if (effect.isEnabled()) {
+                List<Component> lines = effect.addInformation(stack, expanded, ClientTooltipState.player(), new ArrayList<>(), flag);
+                lines.forEach(tooltip);
+            }
+        }
+    }
 
-		List<SetEffect> stackEffects = CombinedArmorData.effects(stack);
-		if (!stackEffects.isEmpty() && stackEffects.get(0).isEnabled()) {
-			// add header if shifting
-			// The client screen supplies the expanded tooltip through its normal
-			// advanced-tooltip path; common item code must not reference client classes.
-			boolean expanded = ClientTooltipState.isShiftDown();
-			if (expanded)
-				tooltip.add(new TranslatableComponent("item.blockarmor.tooltip.setEffects", 
-						new TranslatableComponent("item.blockarmor.tooltip.setEffectsRequire"+(Config.piecesForSet == 4 ? "" : "+"), Config.piecesForSet)
-						.withStyle(ChatFormatting.ITALIC), Config.piecesForSet)
-						.withStyle(ChatFormatting.GOLD));
+    @Override
+    public void inventoryTick(ItemStack stack, ServerLevel world, Entity entity, EquipmentSlot ignoredSlot) {
+		if (CombinedArmorData.hasEffect(stack, SetEffect.HOARDER))
+			twopiradians.blockArmor.common.seteffect.SetEffectHoarder.trackOwner(stack, entity);
+        if ((!set.isEnabled() || (CombinedArmorData.isDevSpawned(stack) && entity instanceof Player player
+                && !CommandDev.DEVS.contains(player.getUUID()))) && entity instanceof Player player) {
+            stack.setCount(0);
+            return;
+        }
+        // This must also run after an effect was removed from the stack, so its
+        // previously injected enchantments can be restored to their old levels.
+        SetEffect.reconcileEnchantments(stack, world, entity);
+        for (SetEffect effect : CombinedArmorData.effects(stack)) effect.onUpdate(stack, world, entity, slot.getIndex(), false);
+    }
 
-			// set effect names and descriptions if shifting
-			for (SetEffect effect : stackEffects)
-				if (effect.isEnabled())
-					tooltip = effect.addInformation(stack, expanded, ClientTooltipState.player(),
-							tooltip, flagIn);
+    public boolean tickDropped(ItemStack stack, ItemEntity entity) {
+		if (CombinedArmorData.hasEffect(stack, SetEffect.HOARDER))
+			twopiradians.blockArmor.common.seteffect.SetEffectHoarder.trackOwner(stack, entity);
+		if (!set.isEnabled() || CombinedArmorData.isDevSpawned(stack)) {
+			if (CombinedArmorData.hasEffect(stack, SetEffect.HOARDER)) SetEffect.HOARDER.onBreak(stack, entity);
+			entity.discard(); return true;
 		}
-	}
+        return false;
+    }
 
-	/** Mostly handles nbt and enchanting armor */
-	@Override
-	public void inventoryTick(ItemStack stack, Level world, Entity entity, int itemSlot, boolean isSelected) {
-		// delete dev spawned items if not in dev's inventory and delete disabled items
-		// (except missingTexture items in SMP)
-		if (stack.isEmpty() || (!set.isEnabled() && !world.isClientSide & entity instanceof Player)
-				|| (!world.isClientSide && entity instanceof Player && stack.hasTag()
-						&& stack.getTag().contains("devSpawned") && !CommandDev.DEVS.contains(entity.getUUID()))) {
-			if (((Player) entity).getInventory().getItem(itemSlot) == stack)
-				((Player) entity).getInventory().setItem(itemSlot, ItemStack.EMPTY);
-			return;
-		}
+    public void tickEquipped(ItemStack stack, Level world, Player player) {
+        if ((!set.isEnabled() || (CombinedArmorData.isDevSpawned(stack) && !CommandDev.DEVS.contains(player.getUUID())))
+                && player.getItemBySlot(slot) == stack) { player.setItemSlot(slot, ItemStack.EMPTY); return; }
+        for (SetEffect effect : CombinedArmorData.effects(stack)) if (ArmorSet.getWornSetEffects(player).contains(effect)) effect.onArmorTick(world, player, stack);
+    }
 
-		if (!stack.hasTag())
-			stack.setTag(new CompoundTag());
+    public void setMaterial(BlockArmorMaterial material) {
+        this.material = material;
+        attributes = HashMultimap.create();
+        Identifier id = Identifier.fromNamespaceAndPath("blockarmor", "armor/" + slot.getName());
+        attributes.put(Attributes.ARMOR.value(), new AttributeModifier(id, getDefense(), AttributeModifier.Operation.ADD_VALUE));
+        attributes.put(Attributes.ARMOR_TOUGHNESS.value(), new AttributeModifier(id, getToughness(), AttributeModifier.Operation.ADD_VALUE));
+        if (material.getKnockbackResistance() > 0) attributes.put(Attributes.KNOCKBACK_RESISTANCE.value(),
+                new AttributeModifier(id, material.getKnockbackResistance() / 10D * Config.globalKnockbackResistanceModifier,
+                        AttributeModifier.Operation.ADD_VALUE));
+    }
 
-		for (SetEffect effect : CombinedArmorData.effects(stack))
-			effect.onUpdate(stack, world, entity, slot.getFilterFlag(), isSelected);
-	}
-
-	/** Delete dev spawned dropped items */
-	public boolean tickDropped(ItemStack stack, ItemEntity entityItem) {
-		// delete dev spawned items if not worn by dev and delete disabled items (except
-		// missingTexture items in SMP)
-		if ((!set.isEnabled() && !entityItem.level.isClientSide)
-				|| (!entityItem.level.isClientSide && entityItem != null && entityItem.getItem() != null
-				&& entityItem.getItem().hasTag() && entityItem.getItem().getTag().contains("devSpawned"))) {
-			entityItem.discard();
-			return true;
-		}
-		return false;
-	}
-
-	/** Handles most of the armor set special effects and bonuses. */
-	public void tickEquipped(ItemStack stack, Level world, Player player) {
-		// delete dev spawned items if not worn by dev and delete disabled items (except
-		// missingTexture items in SMP)
-		if (stack.isEmpty() || (!set.isEnabled() && !world.isClientSide)
-				|| (!world.isClientSide && stack != null && stack.hasTag() && stack.getTag().contains("devSpawned")
-				&& !CommandDev.DEVS.contains(player.getUUID())
-				&& player.getItemBySlot(this.slot) == stack)) {
-			player.setItemSlot(this.slot, ItemStack.EMPTY);
-			return;
-		}
-
-		if (!stack.hasTag())
-			stack.setTag(new CompoundTag());
-
-		for (SetEffect effect : CombinedArmorData.effects(stack))
-			if (ArmorSet.getWornSetEffects(player).contains(effect))
-				effect.onArmorTick(world, player, stack);
-	}
-
-	// ======================= CHANGE MATERIAL FROM CONFIG =======================
-
-	public void setMaterial(ArmorMaterial material) {
-		this.material = material;
-		// recreate attributes
-		this.attributes = HashMultimap.create();
-		UUID uuid = ARMOR_MODIFIERS[slot.getIndex()];
-		this.attributes.put(Attributes.ARMOR, new AttributeModifier(uuid, "Armor modifier",
-				(double) this.getDefense(), AttributeModifier.Operation.ADDITION));
-		this.attributes.put(Attributes.ARMOR_TOUGHNESS, new AttributeModifier(uuid, "Armor toughness",
-				(double) this.getToughness(), AttributeModifier.Operation.ADDITION));
-		if (this.material.getKnockbackResistance() > 0)
-			this.attributes.put(Attributes.KNOCKBACK_RESISTANCE,
-					new AttributeModifier(uuid, "Armor knockback resistance",
-							(this.material.getKnockbackResistance()) / 10d * Config.globalKnockbackResistanceModifier,
-							AttributeModifier.Operation.ADDITION));
-	}
-
-	@Override
-	public ArmorMaterial getMaterial() {
-		return this.material;
-	}
-
-	@Override
-	public int getDefense() {
-		return (int) (this.material.getDefenseForSlot(slot) * Config.globalDamageReductionModifier);
-	}
-
-	@Override
-	public float getToughness() {
-		return (float) (this.material.getToughness() * Config.globalToughnessModifier);
-	}
-
-	@Override
-	public int getEnchantmentValue() {
-		return (int) (this.material.getEnchantmentValue() * Config.globalEnchantabilityModifier);
-	}
-
+    public static boolean hasRealEnchantment(ItemStack stack) { return CombinedArmorData.hasRealEnchantments(stack); }
 }

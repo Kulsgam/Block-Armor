@@ -14,8 +14,7 @@ public class SetEffectImmovable extends SetEffect {
 		super();
 		this.knockbackResistance = knockbackResistance;
 		this.color = ChatFormatting.GRAY;
-		this.attributes.put(Attributes.KNOCKBACK_RESISTANCE, new AttributeModifier(KNOCKBACK_RESISTANCE_UUID, 
-				"Knockback Resistance", knockbackResistance, AttributeModifier.Operation.ADDITION));
+		this.attributes.put(Attributes.KNOCKBACK_RESISTANCE.value(), new AttributeModifier(KNOCKBACK_RESISTANCE_UUID, knockbackResistance, AttributeModifier.Operation.ADD_VALUE));
 	}
 	
 	/**Extra objects needed for description*/

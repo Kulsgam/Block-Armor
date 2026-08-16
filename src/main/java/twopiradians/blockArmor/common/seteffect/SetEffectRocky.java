@@ -1,6 +1,7 @@
 package twopiradians.blockArmor.common.seteffect;
 
 import net.minecraft.ChatFormatting;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -29,15 +30,15 @@ public class SetEffectRocky extends SetEffect {
 			state.blockarmor$setFirstTick(true);
 			// slow down under water a bit (if no depth strider)
 			if ((Math.abs(motion.x) > 0 || Math.abs(motion.z) > 0 || motion.y > 0) && 
-					EnchantmentHelper.getDepthStrider(player) == 0) {
+					EnchantmentHelper.getEnchantmentLevel(
+							world.registryAccess().lookupOrThrow(Registries.ENCHANTMENT).getOrThrow(net.minecraft.world.item.enchantment.Enchantments.DEPTH_STRIDER), player) == 0) {
 				player.setSprinting(false); // prevent sprinting
 				player.setDeltaMovement(
-						motion.x()*(player.isOnGround() ? 0.14d : 1d), 
+						motion.x()*(player.onGround() ? 0.14d : 1d), 
 						motion.y(), 
-						motion.z()*(player.isOnGround() ? 0.14d : 1d));
-				if (player.isOnGround())
-					player.hurtMarked = true;
-				player.hasImpulse = true;
+						motion.z()*(player.onGround() ? 0.14d : 1d));
+				// hasImpulse was removed; hurtMarked is the modern motion-sync flag.
+				player.hurtMarked = true;
 			}
 		}
 	}

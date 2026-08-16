@@ -2,31 +2,44 @@ package twopiradians.blockArmor.creativetab;
 
 import java.util.ArrayList;
 import java.util.List;
-import net.fabricmc.fabric.api.client.itemgroup.FabricItemGroupBuilder;
-import net.minecraft.resources.ResourceLocation;
+
+import net.fabricmc.fabric.api.creativetab.v1.FabricCreativeModeTab;
+import net.minecraft.core.Registry;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.level.block.Blocks;
-import twopiradians.blockArmor.common.BlockArmor;
 import twopiradians.blockArmor.common.item.ArmorSet;
 
+/** Content providers for the two generated tabs; registration occurs after item discovery. */
 public final class BlockArmorCreativeTab {
     public static final List<ItemStack> vanillaStacks = new ArrayList<>();
     public static final List<ItemStack> moddedStacks = new ArrayList<>();
-    public static final CreativeModeTab vanillaTab = build("block_armor_vanilla", false, vanillaStacks);
-    public static final CreativeModeTab moddedTab = build("block_armor_modded", true, moddedStacks);
-    private BlockArmorCreativeTab() {}
+    public static final CreativeModeTab vanillaTab = tab("itemGroup.blockarmor.vanilla", vanillaStacks);
+    public static final CreativeModeTab moddedTab = tab("itemGroup.blockarmor.modded", moddedStacks);
+    private BlockArmorCreativeTab() { }
 
-    private static CreativeModeTab build(String name, boolean modded, List<ItemStack> stacks) {
-        return FabricItemGroupBuilder.create(new ResourceLocation(BlockArmor.MODID, name))
-                .icon(() -> icon(modded, stacks)).appendItems(items -> items.addAll(stacks)).build();
+    private static CreativeModeTab tab(String title, List<ItemStack> entries) {
+        return FabricCreativeModeTab.builder()
+                .title(Component.translatable(title))
+                .icon(() -> entries.isEmpty() ? new ItemStack(Items.IRON_CHESTPLATE) : entries.getFirst().copy())
+                .displayItems((parameters, output) -> entries.forEach(output::accept))
+                .build();
     }
 
-    private static ItemStack icon(boolean modded, List<ItemStack> stacks) {
-        if (modded && !stacks.isEmpty()) return stacks.get(0);
-        ArmorSet bedrock = ArmorSet.getSet(Blocks.BEDROCK);
-        if (bedrock != null && bedrock.chestplate != null) return new ItemStack(bedrock.chestplate);
-        return stacks.isEmpty() ? new ItemStack(Items.IRON_CHESTPLATE) : stacks.get(0);
+    private static boolean initialized;
+
+    public static void initialize() {
+        if (initialized) return;
+        initialized = true;
+        // Search is built from registered CATEGORY tabs. Adding directly to the
+        // SEARCH event is too late for its text index, so register the same two
+        // generated tabs used by the working 1.18.1 Fabric port.
+        Registry.register(BuiltInRegistries.CREATIVE_MODE_TAB,
+                Identifier.fromNamespaceAndPath("blockarmor", "block_armor_vanilla"), vanillaTab);
+        Registry.register(BuiltInRegistries.CREATIVE_MODE_TAB,
+                Identifier.fromNamespaceAndPath("blockarmor", "block_armor_modded"), moddedTab);
     }
 }

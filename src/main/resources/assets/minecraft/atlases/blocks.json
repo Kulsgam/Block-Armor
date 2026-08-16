@@ -1,0 +1,6 @@
+{
+  "sources": [
+    { "type": "minecraft:directory", "source": "items/icons", "prefix": "items/icons/" },
+    { "type": "minecraft:directory", "source": "items/overrides", "prefix": "items/overrides/" }
+  ]
+}

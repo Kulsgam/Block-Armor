@@ -16,10 +16,10 @@ public class SetEffectSoft_Fall extends SetEffect {
 	/**Prevent fall damage*/
 	public static boolean preventsFallDamage(net.minecraft.world.entity.LivingEntity entity, float distance) {
 		if (ArmorSet.getWornSetEffects(entity).contains(SetEffect.SOFT_FALL)) {
-			if (!entity.level.isClientSide && distance > 2)
-				entity.level.playSound(null, entity.blockPosition(), 
+			if (!entity.level().isClientSide() && distance > 2)
+				entity.level().playSound(null, entity.blockPosition(), 
 						SoundEvents.WOOL_FALL, SoundSource.PLAYERS, 
-						Math.min(distance/20f, 1), entity.level.random.nextFloat()+0.8f);
+						Math.min(distance/20f, 1), entity.level().getRandom().nextFloat()+0.8f);
 			return true;
 		}
 		return false;

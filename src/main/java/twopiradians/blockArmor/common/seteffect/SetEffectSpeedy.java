@@ -11,8 +11,7 @@ public class SetEffectSpeedy extends SetEffect {
 	protected SetEffectSpeedy() {
 		super();
 		this.color = ChatFormatting.YELLOW;
-		this.attributes.put(Attributes.MOVEMENT_SPEED, new AttributeModifier(MOVEMENT_SPEED_UUID, 
-				"Movement Speed", 0.1d, AttributeModifier.Operation.ADDITION));
+		this.attributes.put(Attributes.MOVEMENT_SPEED.value(), new AttributeModifier(MOVEMENT_SPEED_UUID, 0.1d, AttributeModifier.Operation.ADD_VALUE));
 	}
 
 	/**Should block be given this set effect*/

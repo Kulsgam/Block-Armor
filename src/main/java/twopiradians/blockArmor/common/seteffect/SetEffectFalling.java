@@ -27,8 +27,8 @@ public class SetEffectFalling extends SetEffect {
 		super.onArmorTick(world, player, stack);
 
 		//particles
-		if (!world.isClientSide && ArmorSet.getFirstSetItem(player, this) == stack &&
-				world.random.nextInt(16) == 0) {
+		if (!world.isClientSide() && ArmorSet.getFirstSetItem(player, this) == stack &&
+				world.getRandom().nextInt(16) == 0) {
 			ArmorSet set = ((BlockArmorItem)stack.getItem()).set;
 			if (set != null && set.block instanceof FallingBlock)
 				((ServerLevel)world).sendParticles(new BlockParticleOption(ParticleTypes.FALLING_DUST, set.block.defaultBlockState()), 
@@ -36,7 +36,7 @@ public class SetEffectFalling extends SetEffect {
 						1, 0.3f, 0.5f, 0.3f, 0);
 		}			
 		//fall faster
-		if (world.isClientSide && ArmorSet.getFirstSetItem(player, this) == stack &&
+		if (world.isClientSide() && ArmorSet.getFirstSetItem(player, this) == stack &&
 				player.isShiftKeyDown() && Math.abs(player.getDeltaMovement().y) < 3.5d && player.getDeltaMovement().y < 0)
 			player.setDeltaMovement(player.getDeltaMovement().x, player.getDeltaMovement().y * 1.3d, player.getDeltaMovement().z);
 	}

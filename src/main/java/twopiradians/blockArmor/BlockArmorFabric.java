@@ -1,12 +1,12 @@
 package twopiradians.blockArmor;
 
 import net.fabricmc.api.ModInitializer;
-import net.fabricmc.fabric.api.command.v1.CommandRegistrationCallback;
+import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
-import net.fabricmc.fabric.api.entity.event.v1.ServerEntityWorldChangeEvents;
+import net.fabricmc.fabric.api.entity.event.v1.ServerEntityLevelChangeEvents;
 import twopiradians.blockArmor.common.BlockArmor;
 import twopiradians.blockArmor.common.CommonProxy;
 import twopiradians.blockArmor.common.block.ModBlocks;
@@ -19,6 +19,7 @@ import twopiradians.blockArmor.common.seteffect.SetEffectHealth_Boost;
 import twopiradians.blockArmor.common.seteffect.SetEffectRespawn;
 import twopiradians.blockArmor.common.seteffect.SetEffectUndying;
 import twopiradians.blockArmor.common.tileentity.ModTileEntities;
+import twopiradians.blockArmor.creativetab.BlockArmorCreativeTab;
 
 /** Fabric common entrypoint. All registrations are intentionally complete before registries freeze. */
 public final class BlockArmorFabric implements ModInitializer {
@@ -31,18 +32,19 @@ public final class BlockArmorFabric implements ModInitializer {
         SetEffect.setup();
         Config.load();
         ModItems.registerDiscoveredArmor();
+        BlockArmorCreativeTab.initialize();
         CommonProxy.setup();
 
-        CommandRegistrationCallback.EVENT.register((dispatcher, dedicated) -> {
+		CommandRegistrationCallback.EVENT.register((dispatcher, commandBuildContext, selection) -> {
             twopiradians.blockArmor.common.command.CommandDev.register(dispatcher);
             dispatcher.register(net.minecraft.commands.Commands.literal("blockarmor")
-                    .requires(source -> source.hasPermission(2))
+                    .requires(source -> net.minecraft.commands.Commands.LEVEL_GAMEMASTERS.check(source.permissions()))
                     .then(net.minecraft.commands.Commands.literal("reload").executes(context -> {
                         Config.reload();
                         CommonProxy.refreshRecipes(context.getSource().getServer());
                         for (net.minecraft.server.level.ServerPlayer player : context.getSource().getServer().getPlayerList().getPlayers())
                             BlockArmor.NETWORK.sendConfig(player);
-                        context.getSource().sendSuccess(new net.minecraft.network.chat.TextComponent("Block Armor configuration reloaded"), true);
+                        context.getSource().sendSuccess(() -> net.minecraft.network.chat.Component.literal("Block Armor configuration reloaded"), true);
                         return 1;
                     })));
         });
@@ -61,7 +63,7 @@ public final class BlockArmorFabric implements ModInitializer {
         });
         ServerPlayerEvents.AFTER_RESPAWN.register((oldPlayer, newPlayer, alive) ->
                 SetEffectHealth_Boost.onRespawn(newPlayer));
-        ServerEntityWorldChangeEvents.AFTER_PLAYER_CHANGE_WORLD.register((player, origin, destination) ->
+		ServerEntityLevelChangeEvents.AFTER_PLAYER_CHANGE_LEVEL.register((player, origin, destination) ->
                 BlockArmor.NETWORK.sendCooldowns(player));
         ServerPlayerEvents.ALLOW_DEATH.register((player, source, amount) ->
                 !(SetEffectUndying.onDeath(player) || SetEffectRespawn.onDeath(player)));

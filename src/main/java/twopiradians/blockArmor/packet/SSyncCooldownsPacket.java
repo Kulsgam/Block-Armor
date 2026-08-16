@@ -1,9 +1,9 @@
 package twopiradians.blockArmor.packet;
 
 import io.netty.buffer.Unpooled;
-import net.minecraft.core.Registry;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import twopiradians.blockArmor.common.item.ModItems;
@@ -23,21 +23,21 @@ public final class SSyncCooldownsPacket {
                 .toList();
         buffer.writeVarInt(entries.size());
         for (var entry : entries) {
-            buffer.writeResourceLocation(Registry.ITEM.getKey(entry.getKey()));
+            buffer.writeIdentifier(BuiltInRegistries.ITEM.getKey(entry.getKey()));
             buffer.writeVarInt(Math.max(0, ((CooldownInstanceAccessor) (Object) entry.getValue()).blockarmor$getEndTime() - now));
         }
         return buffer;
     }
 
     public static void decode(Player player, FriendlyByteBuf buffer) {
-        for (Item item : ModItems.allArmors) player.getCooldowns().removeCooldown(item);
+        for (Item item : ModItems.allArmors) player.getCooldowns().removeCooldown(BuiltInRegistries.ITEM.getKey(item));
         int count = buffer.readVarInt();
         for (int i = 0; i < count; i++) {
-            ResourceLocation id = buffer.readResourceLocation();
+            Identifier id = buffer.readIdentifier();
             int remaining = buffer.readVarInt();
-            Item item = Registry.ITEM.get(id);
+            Item item = BuiltInRegistries.ITEM.getValue(id);
             if (item instanceof twopiradians.blockArmor.common.item.BlockArmorItem && remaining > 0)
-                player.getCooldowns().addCooldown(item, remaining);
+                player.getCooldowns().addCooldown(id, remaining);
         }
     }
 }

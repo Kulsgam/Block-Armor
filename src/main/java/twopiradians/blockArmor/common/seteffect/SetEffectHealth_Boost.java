@@ -26,8 +26,7 @@ public class SetEffectHealth_Boost extends SetEffect {
 		super();
 		this.healthBoost = healthBoost;
 		this.color = ChatFormatting.RED;
-		this.attributes.put(Attributes.MAX_HEALTH, new AttributeModifier(MAX_HEALTH_UUID, 
-				"Max Health", healthBoost, AttributeModifier.Operation.ADDITION));
+		this.attributes.put(Attributes.MAX_HEALTH.value(), new AttributeModifier(MAX_HEALTH_UUID, healthBoost, AttributeModifier.Operation.ADD_VALUE));
 	}
 	
 	/**Extra objects needed for description*/
@@ -39,7 +38,7 @@ public class SetEffectHealth_Boost extends SetEffect {
 	/**Only called when player wearing full, enabled set*/
 	@Override
 	public void onArmorTick(Level world, Player player, ItemStack stack) {
-		if (!world.isClientSide && playersToCheck.contains(player)) {
+		if (!world.isClientSide() && playersToCheck.contains(player)) {
 			// if max health already, restore health from this effect
 			if (player.getHealth() >= 20f) {
 				float amount = 0;
@@ -54,13 +53,13 @@ public class SetEffectHealth_Boost extends SetEffect {
 
 	/**Restore health when player logging in with health armor*/
 	public static void onLogin(ServerPlayer player) {		
-		if (!player.level.isClientSide && player instanceof ServerPlayer)
+		if (!player.level().isClientSide() && player instanceof ServerPlayer)
 			playersToCheck.add((ServerPlayer) player);
 	}
 	
 	/**Restore health when player respawned with health armor on*/
 	public static void onRespawn(ServerPlayer player) {		
-		if (!player.level.isClientSide && player instanceof ServerPlayer)
+		if (!player.level().isClientSide() && player instanceof ServerPlayer)
 			playersToCheck.add((ServerPlayer) player);
 	}
 

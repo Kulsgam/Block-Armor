@@ -1,5 +1,5 @@
 plugins {
-    id 'fabric-loom' version '0.10-SNAPSHOT'
+    id 'net.fabricmc.fabric-loom' version "${loom_version}"
     id 'maven-publish'
 }
 
@@ -11,36 +11,53 @@ base {
 }
 
 repositories {
-    maven { url = 'https://maven.fabricmc.net/' }
-    maven { url = 'https://maven.terraformersmc.com/releases/' }
-    mavenCentral()
+    maven { url = 'https://maven.blamejared.com' }
+    exclusiveContent {
+        forRepository {
+            maven { url = 'https://api.modrinth.com/maven' }
+        }
+        filter { includeGroup 'maven.modrinth' }
+    }
+}
+
+loom {
+    splitEnvironmentSourceSets()
+    mods {
+        "blockarmor" {
+            sourceSet sourceSets.main
+            sourceSet sourceSets.client
+        }
+    }
 }
 
 dependencies {
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
-    // Keep the existing source on Mojang names; Loom remaps Fabric API at build time.
-    mappings loom.officialMojangMappings()
-    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
-    modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+    implementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
     // Optional at runtime: exposes our native configuration screen when Mod Menu is installed.
-    modCompileOnly "com.terraformersmc:modmenu:${project.modmenu_version}"
-    modLocalRuntime "com.terraformersmc:modmenu:${project.modmenu_version}"
+    compileOnly "maven.modrinth:modmenu:${project.modmenu_version}"
+    runtimeOnly "maven.modrinth:modmenu:${project.modmenu_version}"
+    // Optional integration. Compile against the same JEI build used by the
+    // supplied 26.1.2 Prism instance; JEI is not required to load the mod.
+    compileOnly "mezz.jei:jei-${project.minecraft_version}-fabric-api:${project.jei_version}"
+    runtimeOnly "mezz.jei:jei-${project.minecraft_version}-fabric:${project.jei_version}"
 }
 
 processResources {
     inputs.property 'version', project.version
+    inputs.property 'fabric_min_version', project.fabric_min_version
     filesMatching('fabric.mod.json') {
-        expand 'version': project.version
+        expand 'version': project.version, 'fabric_min_version': project.fabric_min_version
     }
 }
 
 java {
-    toolchain.languageVersion = JavaLanguageVersion.of(17)
+    toolchain.languageVersion = JavaLanguageVersion.of(25)
     withSourcesJar()
 }
 
 tasks.withType(JavaCompile).configureEach {
-    it.options.release = 17
+    it.options.release = 25
 }
 
 publishing {
@@ -50,3 +67,33 @@ publishing {
         }
     }
 }
+
+tasks.register('verifyPortResources') {
+    group = 'verification'
+    description = 'Checks JSON syntax, mixin registration, and generated creative-tab translations.'
+    inputs.files(fileTree('src/main/resources') { include '**/*.json' })
+    inputs.files(fileTree('src/main/java/twopiradians/blockArmor/mixin') { include '*.java' })
+    inputs.files(fileTree('src/client/java/twopiradians/blockArmor/mixin') { include '*.java' })
+    doLast {
+        def parser = new groovy.json.JsonSlurper()
+        fileTree('src/main/resources').matching { include '**/*.json' }.files.each { parser.parse(it) }
+
+        def config = parser.parse(file('src/main/resources/blockarmor.mixins.json'))
+        def registeredCommon = (config.mixins ?: []) as Set
+        def registeredClient = (config.client ?: []) as Set
+        def classNames = { String directory ->
+            fileTree(directory).matching { include '*.java' }.files.collect { it.name - '.java' } as Set
+        }
+        def missingCommon = classNames('src/main/java/twopiradians/blockArmor/mixin') - registeredCommon
+        def missingClient = classNames('src/client/java/twopiradians/blockArmor/mixin') - registeredClient
+        if (!missingCommon.empty || !missingClient.empty)
+            throw new GradleException("Unregistered mixins: common=${missingCommon}, client=${missingClient}")
+
+        def translations = parser.parse(file('src/main/resources/assets/blockarmor/lang/en_us.json'))
+        ['itemGroup.blockarmor.vanilla', 'itemGroup.blockarmor.modded'].each {
+            if (!translations.containsKey(it)) throw new GradleException("Missing translation key ${it}")
+        }
+    }
+}
+
+tasks.named('check') { dependsOn tasks.named('verifyPortResources') }

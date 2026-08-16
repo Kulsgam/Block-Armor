@@ -1,17 +1,17 @@
 package twopiradians.blockArmor.common.seteffect;
 
 import net.minecraft.ChatFormatting;
-import net.minecraft.network.chat.TranslatableComponent;
+import net.minecraft.network.chat.Component;
+
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.GameRules;
+import net.minecraft.world.level.gamerules.GameRules;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 
-import twopiradians.blockArmor.client.ClientProxy;
 import twopiradians.blockArmor.common.BlockArmor;
 import twopiradians.blockArmor.common.CommonProxy;
 import twopiradians.blockArmor.common.item.ArmorSet;
@@ -28,8 +28,8 @@ public class SetEffectTime_Control extends SetEffect {
 	}
 	
 	@Override
-	public TranslatableComponent getDescription() {
-		return new TranslatableComponent("setEffect."+this.name.replaceAll(" ", "_").toLowerCase()+"."+type.name.toLowerCase()+".description", this.getDescriptionObjects());
+	public Component getDescription() {
+		return Component.translatable("setEffect."+this.name.replaceAll(" ", "_").toLowerCase()+"."+type.name.toLowerCase()+".description", this.getDescriptionObjects());
 	}
 
 	/**Write this effect to string for config (variables need to be included)*/
@@ -49,32 +49,32 @@ public class SetEffectTime_Control extends SetEffect {
 	public void onArmorTick(Level world, Player player, ItemStack stack) {
 		super.onArmorTick(world, player, stack);
 
-		if (ArmorSet.getFirstSetItem(player, this) == stack &&
-				BlockArmor.key.isKeyDown(player)) {
-			if (type == Type.REWIND) {
-				if (world.getLevelData().getDayTime()< 21)
-					setWorldTime(world, 23999 + world.getDayTime() - 21);
-				else
-					setWorldTime(world, world.getDayTime() - 21);
-				if (player.tickCount % 4 == 0)
-					world.playSound(player, player.blockPosition(), SoundEvents.LODESTONE_COMPASS_LOCK, SoundSource.PLAYERS, 0.3f, 0f);
-			}
-			else if (type == Type.STOP && world.getGameRules().getBoolean(GameRules.RULE_DAYLIGHT)) {
-				setWorldTime(world, world.getDayTime() - 1);
-				if (player.tickCount % 8 == 0)
-				world.playSound(player, player.blockPosition(), SoundEvents.NOTE_BLOCK_SNARE, SoundSource.PLAYERS, 0.2f, 0f);
-			}
-			else if (type == Type.ACCELERATE) {
-				setWorldTime(world, world.getDayTime() + 19);
-				if (player.tickCount % 2 == 0)
-					world.playSound(player, player.blockPosition(), SoundEvents.LODESTONE_COMPASS_LOCK, SoundSource.PLAYERS, 0.3f, 2f);
-			}
-		}
+		if (ArmorSet.getFirstSetItem(player, this) != stack || !BlockArmor.key.isKeyDown(player)) return;
+		if (world.dimensionType().defaultClock().isEmpty()) return;
+		if (world.isClientSide()) return;
+		net.minecraft.server.level.ServerLevel server = (net.minecraft.server.level.ServerLevel) world;
+		boolean active = type != Type.STOP || server.getGameRules().get(GameRules.ADVANCE_TIME);
+		if (!active) return;
+		server.dimensionType().defaultClock().ifPresent(clock -> {
+				long current = server.clockManager().getTotalTicks(clock);
+				if (type == Type.REWIND) setWorldTime(server, clock, rewind(current));
+				else if (type == Type.STOP)
+					setWorldTime(server, clock, Math.max(0L, current - 1L));
+				else if (type == Type.ACCELERATE) setWorldTime(server, clock, current + 19L);
+			});
+		if (player.tickCount % (type == Type.ACCELERATE ? 2 : type == Type.REWIND ? 4 : 8) == 0)
+			world.playSound(null, player.blockPosition(), type == Type.STOP ? SoundEvents.NOTE_BLOCK_SNARE.value() : SoundEvents.LODESTONE_COMPASS_LOCK, SoundSource.PLAYERS,
+					type == Type.STOP ? 0.2F : 0.3F, type == Type.ACCELERATE ? 2.0F : 0.0F);
 	}
 
-	public void setWorldTime(Level world, long time) {
-		if (world.isClientSide) ClientProxy.setWorldTime(world, time);
-		if (!world.isClientSide) CommonProxy.setWorldTime(world, time);
+	static long rewind(long current) {
+		long changed = current - 21L;
+		return changed >= 0 ? changed : Math.floorMod(changed, 24000L);
+	}
+
+	private void setWorldTime(net.minecraft.server.level.ServerLevel world,
+			net.minecraft.core.Holder<net.minecraft.world.clock.WorldClock> clock, long time) {
+		world.clockManager().setTotalTicks(clock, time);
 	}
 
 	/**Can be overwritten to return a new instance depending on the given block*/

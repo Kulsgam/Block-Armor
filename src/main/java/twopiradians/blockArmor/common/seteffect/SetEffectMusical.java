@@ -22,20 +22,20 @@ public class SetEffectMusical extends SetEffect {
 	public void onArmorTick(Level world, Player player, ItemStack stack) {
 		super.onArmorTick(world, player, stack);
 
-		if (!world.isClientSide && ArmorSet.getFirstSetItem(player, this) == stack &&
-				!player.getCooldowns().isOnCooldown(stack.getItem())) {
+		if (!world.isClientSide() && ArmorSet.getFirstSetItem(player, this) == stack &&
+				!player.getCooldowns().isOnCooldown(stack)) {
 			
-			double velX = player.getX() - player.xCloak;
-			double velZ = player.getZ() - player.zCloak;
+			double velX = player.getX() - player.xOld;
+			double velZ = player.getZ() - player.zOld;
 			double motion = Math.sqrt(velX*velX + velZ*velZ);
-			if (player.isOnGround() && motion > 0.1d) {
+			if (player.onGround() && motion > 0.1d) {
 				this.setCooldown(player, 10);
 				
 				((ServerLevel)world).sendParticles(ParticleTypes.NOTE, 
-						player.getX(), player.getY()+1f, player.getZ(),1, 0.8f, 0.4f, 0.8f, world.random.nextDouble());
+						player.getX(), player.getY()+1f, player.getZ(),1, 0.8f, 0.4f, 0.8f, world.getRandom().nextDouble());
 				world.playSound((Player)null, player.blockPosition(), 
-						NoteBlockInstrument.byState(world.getBlockState(player.blockPosition().below())).getSoundEvent(), 
-						SoundSource.RECORDS, 3.0F, world.random.nextFloat()*2);
+						world.getBlockState(player.blockPosition().below()).instrument().getSoundEvent().value(),
+						SoundSource.RECORDS, 3.0F, world.getRandom().nextFloat()*2);
 			}
 		}
 	}

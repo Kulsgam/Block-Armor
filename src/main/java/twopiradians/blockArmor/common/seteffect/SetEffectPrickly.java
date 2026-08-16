@@ -4,6 +4,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import net.minecraft.ChatFormatting;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.damagesource.DamageSource;
@@ -33,16 +34,16 @@ public class SetEffectPrickly extends SetEffect {
 		super.onArmorTick(world, player, stack);
 
 		if (ArmorSet.getFirstSetItem(player, this) == stack && 
-				!world.isClientSide && !player.getCooldowns().isOnCooldown(stack.getItem()))	{
+				!world.isClientSide() && !player.getCooldowns().isOnCooldown(stack))	{
 			AABB axisAlignedBB = player.getBoundingBox();
-			List<LivingEntity> list = player.level.getEntitiesOfClass(LivingEntity.class, axisAlignedBB);
+			List<LivingEntity> list = player.level().getEntitiesOfClass(LivingEntity.class, axisAlignedBB);
 			list.remove(player);
 
 			if (!list.isEmpty()) {
 				Iterator<LivingEntity> iterator = list.iterator();
-				if (iterator.next().hurt(DamageSource.CACTUS, 1.0F)) {
+				if (iterator.next().hurtServer((ServerLevel) world, world.damageSources().cactus(), 1.0F)) {
 					world.playSound((Player)null, player.blockPosition(), SoundEvents.THORNS_HIT, 
-							SoundSource.PLAYERS, 1.0F, world.random.nextFloat() * 0.4F + 0.8F);
+							SoundSource.PLAYERS, 1.0F, world.getRandom().nextFloat() * 0.4F + 0.8F);
 					this.setCooldown(player, 20);
 				}
 			}

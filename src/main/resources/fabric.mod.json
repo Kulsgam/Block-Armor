@@ -15,16 +15,17 @@
   "entrypoints": {
     "main": ["twopiradians.blockArmor.BlockArmorFabric"],
     "client": ["twopiradians.blockArmor.client.BlockArmorFabricClient"],
-    "modmenu": ["twopiradians.blockArmor.client.config.BlockArmorModMenu"]
+    "modmenu": ["twopiradians.blockArmor.client.config.BlockArmorModMenu"],
+    "jei_mod_plugin": ["twopiradians.blockArmor.jei.BlockArmorJeiPlugin"]
   },
   "mixins": ["blockarmor.mixins.json"],
   "depends": {
-    "fabricloader": ">=0.12.12",
-    "fabric": ">=0.46.4+1.18",
-    "minecraft": "1.18.1",
-    "java": ">=17"
+    "fabricloader": ">=0.19.3",
+    "fabric-api": ">=${fabric_min_version}",
+    "minecraft": ">=26.1.1 <26.2",
+    "java": ">=25"
   },
   "suggests": {
-    "modmenu": ">=3.0.0"
+    "modmenu": ">=18.0.0"
   }
 }

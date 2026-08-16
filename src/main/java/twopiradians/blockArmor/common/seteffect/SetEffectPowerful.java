@@ -10,10 +10,8 @@ public class SetEffectPowerful extends SetEffect {
 	protected SetEffectPowerful() {
 		super();
 		this.color = ChatFormatting.WHITE;
-		this.attributes.put(Attributes.ATTACK_SPEED, new AttributeModifier(ATTACK_SPEED_UUID, 
-				"Attack Speed", 1d, AttributeModifier.Operation.ADDITION));
-		this.attributes.put(Attributes.ATTACK_DAMAGE, new AttributeModifier(ATTACK_DAMAGE_UUID, 
-				"Attack Damage", 3d, AttributeModifier.Operation.ADDITION));
+		this.attributes.put(Attributes.ATTACK_SPEED.value(), new AttributeModifier(ATTACK_SPEED_UUID, 1d, AttributeModifier.Operation.ADD_VALUE));
+		this.attributes.put(Attributes.ATTACK_DAMAGE.value(), new AttributeModifier(ATTACK_DAMAGE_UUID, 3d, AttributeModifier.Operation.ADD_VALUE));
 	}
 
 	/**Should block be given this set effect*/

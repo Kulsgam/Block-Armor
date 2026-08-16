@@ -44,12 +44,12 @@ public class TileEntityMovingLightSource extends BlockEntity implements EntityBl
 	}
 
 	public static <T extends BlockEntity> void tick(Level level, BlockPos pos, BlockState state, T te) {
-		if (!level.isClientSide && te instanceof TileEntityMovingLightSource) {
+		if (!level.isClientSide() && te instanceof TileEntityMovingLightSource) {
 			TileEntityMovingLightSource light = (TileEntityMovingLightSource) te;
 			//check if player has moved away from the tile entity
 			Player player = level.getNearestPlayer(pos.getX()+0.5D, pos.getY()+0.5D, pos.getZ()+0.5D, 2.0D, false);		
 			ItemStack stack = ArmorSet.getFirstSetItem(player, light.effect);
-			if ((player == null || stack == null || (stack.hasTag() && stack.getTag().getBoolean("deactivated"))) &&
+			if ((player == null || stack == null || SetEffect.customBoolean(stack, "deactivated")) &&
 					level.getBlockState(pos).getBlock() instanceof BlockMovingLightSource) {
 				if (--light.despawnTimer <= 0) 
 					level.removeBlock(pos, false);

@@ -8,7 +8,6 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.particles.ParticleTypes;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -22,10 +21,11 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.BucketPickup;
 import net.minecraft.world.level.block.LiquidBlock;
+import net.minecraft.world.level.block.GrowingPlantBlock;
+import net.minecraft.world.level.block.VegetationBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.FluidState;
-import net.minecraft.world.level.material.Material;
 import twopiradians.blockArmor.common.BlockArmor;
 import twopiradians.blockArmor.common.item.ArmorSet;
 import twopiradians.blockArmor.common.item.BlockArmorItem;
@@ -43,11 +43,11 @@ public class SetEffectAbsorbent extends SetEffect {
 	public void onArmorTick(Level world, Player player, ItemStack stack) {
 		super.onArmorTick(world, player, stack);
 
-		if (!world.isClientSide && player.getCooldowns().isOnCooldown(stack.getItem())) 
+		if (!world.isClientSide() && player.getCooldowns().isOnCooldown(stack)) 
 			((ServerLevel)world).sendParticles(ParticleTypes.FALLING_WATER, player.getX(), player.getY()+1.0d,player.getZ(), 
 					3, 0.2d, 0.5d, 0.2d, 0);
 
-		if (!world.isClientSide && !player.getCooldowns().isOnCooldown(stack.getItem())) {
+		if (!world.isClientSide() && !player.getCooldowns().isOnCooldown(stack)) {
 			ArmorSet wornSet = ((BlockArmorItem)stack.getItem()).set;
 			ArmorSet drySet = ArmorSet.getSet(Blocks.SPONGE);
 			ArmorSet wetSet = ArmorSet.getSet(Blocks.WET_SPONGE);
@@ -59,28 +59,22 @@ public class SetEffectAbsorbent extends SetEffect {
 						ItemStack oldStack = player.getItemBySlot(slot);
 						if (oldStack != null && oldStack.getItem() instanceof BlockArmorItem && 
 								((BlockArmorItem)oldStack.getItem()).set == wornSet) { //only change if wet sponge 
-							CompoundTag nbt = new CompoundTag();
-							oldStack.save(nbt);
-							nbt.putString("id", net.minecraft.core.Registry.ITEM.getKey(drySet.getArmorForSlot(slot)).toString());
-							player.setItemSlot(slot, ItemStack.of(nbt));
+							player.setItemSlot(slot, oldStack.transmuteCopy(drySet.getArmorForSlot(slot)));
 						}
 					}
 				}
 				else if (wornSet.block == Blocks.SPONGE &&
-						!world.isClientSide && player.mayBuild() && BlockArmor.key.isKeyDown(player) &&
+						!world.isClientSide() && player.mayBuild() && BlockArmor.key.isKeyDown(player) &&
 						this.absorb(world, player.blockPosition(), player, stack)) {
 					world.playSound((Player)null, player.getX(), player.getY(), player.getZ(), SoundEvents.BUCKET_FILL, 
-							SoundSource.PLAYERS, 1.0F, world.random.nextFloat() + 0.5f);
+							SoundSource.PLAYERS, 1.0F, world.getRandom().nextFloat() + 0.5f);
 
 					//change dry sponge to wet sponge
 					for (EquipmentSlot slot : ArmorSet.SLOTS) {
 						ItemStack oldStack = player.getItemBySlot(slot);
 						if (oldStack != null && oldStack.getItem() instanceof BlockArmorItem && 
 								((BlockArmorItem)oldStack.getItem()).set == wornSet) { //only change if dry sponge 
-							CompoundTag nbt = new CompoundTag();
-							oldStack.save(nbt);
-							nbt.putString("id", net.minecraft.core.Registry.ITEM.getKey(wetSet.getArmorForSlot(slot)).toString());
-							player.setItemSlot(slot, ItemStack.of(nbt));
+							player.setItemSlot(slot, oldStack.transmuteCopy(wetSet.getArmorForSlot(slot)));
 						}
 					}
 					
@@ -108,9 +102,8 @@ public class SetEffectAbsorbent extends SetEffect {
 	            BlockPos blockpos1 = blockpos.relative(direction);
 	            BlockState blockstate = worldIn.getBlockState(blockpos1);
 	            FluidState fluidstate = worldIn.getFluidState(blockpos1);
-	            Material material = blockstate.getMaterial();
 	            if (fluidstate.is(FluidTags.WATER) && player.mayUseItemAt(blockpos1, Direction.UP, stack)) {
-	               if (blockstate.getBlock() instanceof BucketPickup && !((BucketPickup)blockstate.getBlock()).pickupBlock(worldIn, blockpos1, blockstate).isEmpty()) {
+	               if (blockstate.getBlock() instanceof BucketPickup && !((BucketPickup)blockstate.getBlock()).pickupBlock(player, worldIn, blockpos1, blockstate).isEmpty()) {
 	                  ++i;
 	                  if (j < 6) {
 	                     queue.add(new Tuple<>(blockpos1, j + 1));
@@ -121,7 +114,7 @@ public class SetEffectAbsorbent extends SetEffect {
 	                  if (j < 6) {
 	                     queue.add(new Tuple<>(blockpos1, j + 1));
 	                  }
-	               } else if (material == Material.WATER_PLANT || material == Material.REPLACEABLE_WATER_PLANT) {
+	               } else if (isWaterPlant(blockstate)) {
 	                  BlockEntity tileentity = blockstate.hasBlockEntity() ? worldIn.getBlockEntity(blockpos1) : null;
 	                  Block.dropResources(blockstate, worldIn, blockpos1, tileentity);
 	                  worldIn.setBlock(blockpos1, Blocks.AIR.defaultBlockState(), 3);
@@ -140,6 +133,15 @@ public class SetEffectAbsorbent extends SetEffect {
 
 	      return i > 0;
 	   }
+
+	/** 26.1 equivalent of WATER_PLANT and REPLACEABLE_WATER_PLANT materials. */
+	static boolean isWaterPlant(BlockState state) {
+		return state.is(Blocks.KELP) || state.is(Blocks.KELP_PLANT)
+				|| state.is(Blocks.SEAGRASS) || state.is(Blocks.TALL_SEAGRASS)
+				|| (state.getFluidState().is(FluidTags.WATER)
+						&& (state.getBlock() instanceof VegetationBlock
+								|| state.getBlock() instanceof GrowingPlantBlock));
+	}
 
 	/**Should block be given this set effect*/
 	@Override

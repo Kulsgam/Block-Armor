@@ -1,7 +1,8 @@
 {      
     "textures": 
     {
-        "pole": "minecraft:block/dark_oak_log"
+        "pole": "minecraft:block/dark_oak_log",
+        "particle": "minecraft:block/dark_oak_log"
     },
    "elements":[  
       {  

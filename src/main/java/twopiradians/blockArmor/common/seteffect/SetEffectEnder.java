@@ -4,11 +4,9 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 
 import com.google.common.collect.Sets;
-import com.mojang.math.Vector3d;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
-import net.minecraft.network.protocol.game.ClientboundCustomSoundPacket;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -37,8 +35,8 @@ public class SetEffectEnder extends SetEffect {
 	public void onArmorTick(Level world, Player player, ItemStack stack) {
 		super.onArmorTick(world, player, stack);
 
-		if (!world.isClientSide && ArmorSet.getFirstSetItem(player, this) == stack &&
-				BlockArmor.key.isKeyDown(player) && !player.getCooldowns().isOnCooldown(stack.getItem()))	{    
+		if (!world.isClientSide() && ArmorSet.getFirstSetItem(player, this) == stack &&
+				BlockArmor.key.isKeyDown(player) && !player.getCooldowns().isOnCooldown(stack))	{    
 
 			// variables
 			float maxYawOffset = 6f;
@@ -58,14 +56,14 @@ public class SetEffectEnder extends SetEffect {
 					if (result.getType() == HitResult.Type.BLOCK) {
 						LinkedHashSet<BlockPos> positions = Sets.newLinkedHashSet();
 						// prioritize closest position and position up 1
-						BlockPos resultPos = new BlockPos(result.getLocation().x(), result.getLocation().y(), result.getLocation().z());
+						BlockPos resultPos = BlockPos.containing(result.getLocation());
 						positions.add(resultPos);
 						positions.add(resultPos.above());
 						// add all positions in radius
 						for (int x = -radius; x <= radius; ++x) 
 							for (int y = -radius; y <= radius; ++y)
 								for (int z = -radius; z <= radius; ++z) {
-									BlockPos pos = new BlockPos(result.getLocation().x()+x, result.getLocation().y()+y, result.getLocation().z()+z);
+									BlockPos pos = BlockPos.containing(result.getLocation().add(x, y, z));
 									positions.add(pos);
 								}
 						// check each position to see if it can be tp'd to
@@ -90,7 +88,7 @@ public class SetEffectEnder extends SetEffect {
 				}
 			// no valid pos found
 			if (player instanceof ServerPlayer) {
-				((ServerPlayer)player).connection.send(new ClientboundCustomSoundPacket(net.minecraft.core.Registry.SOUND_EVENT.getKey(SoundEvents.NOTE_BLOCK_BASS), SoundSource.PLAYERS, player.position(), 1.0F, world.random.nextFloat() + 0.5F));	
+				world.playSound(null, player.blockPosition(), SoundEvents.NOTE_BLOCK_BASS.value(), SoundSource.PLAYERS, 1.0F, world.getRandom().nextFloat() + .5F);
 				this.setCooldown(player, 10);
 			}
 		}
@@ -104,15 +102,15 @@ public class SetEffectEnder extends SetEffect {
 		double d2 = player.getZ();
 		double d3 = y;
 		boolean flag = false;
-		BlockPos blockpos = new BlockPos(x, y, z);
-		Level world = player.level;
+		BlockPos blockpos = BlockPos.containing(x, y, z);
+		Level world = player.level();
 		if (world.hasChunkAt(blockpos)) {
 			boolean flag1 = false;
 
 			while(!flag1 && blockpos.getY() > 0 && maxYOffset-- > 0) {
 				BlockPos blockpos1 = blockpos.below();
 				BlockState blockstate = world.getBlockState(blockpos1);
-				if (blockstate.getMaterial().blocksMotion()) {
+				if (blockstate.blocksMotion()) {
 					flag1 = true;
 				} else {
 					--d3;
@@ -144,7 +142,7 @@ public class SetEffectEnder extends SetEffect {
 		Vec3 start = player.getEyePosition(0);
 		Vec3 look = this.getVectorForRotation(player.getXRot()+Mth.sin(roll)*yawOffset, player.yHeadRot+Mth.cos(roll)*yawOffset);		
 		Vec3 end = start.add(look.x * distance, look.y * distance, look.z * distance);
-		return player.level.clip(new ClipContext(start, end, ClipContext.Block.OUTLINE, ClipContext.Fluid.NONE, player));
+		return player.level().clip(new ClipContext(start, end, ClipContext.Block.OUTLINE, ClipContext.Fluid.NONE, player));
 	}
 
 	/**Copied from Entity#getVectorForRotation cuz protected*/

@@ -21,7 +21,7 @@ public class SetEffectSlippery extends SetEffect {
 	public void onArmorTick(Level world, Player player, ItemStack stack) {
 		super.onArmorTick(world, player, stack);
 
-		if (world.isClientSide && ArmorSet.getFirstSetItem(player, this) == stack && player.isOnGround())	{    
+		if (world.isClientSide() && ArmorSet.getFirstSetItem(player, this) == stack && player.onGround())	{    
 			if (player.zza == 0 && player.xxa == 0) {
 				Block block = world.getBlockState(player.blockPosition().below()).getBlock();
 				if (!(block instanceof AirBlock) && block.getFriction() <= 0.6f) {

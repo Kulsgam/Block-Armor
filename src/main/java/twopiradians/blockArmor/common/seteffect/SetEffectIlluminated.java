@@ -4,7 +4,8 @@ import java.util.UUID;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
-import net.minecraft.network.chat.TranslatableComponent;
+import net.minecraft.network.chat.Component;
+
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -41,19 +42,19 @@ public class SetEffectIlluminated extends SetEffect {
 
 		// enable/disable
 		if (ArmorSet.getFirstSetItem(player, this) == stack &&
-				!world.isClientSide && BlockArmor.key.isKeyDown(player) && !player.getCooldowns().isOnCooldown(stack.getItem())) {
-			boolean deactivated = !stack.getTag().getBoolean("deactivated");
-			stack.getTag().putBoolean("deactivated", deactivated);
-			player.sendMessage(new TranslatableComponent(ChatFormatting.GRAY+""+ChatFormatting.ITALIC+"Illuminated set effect "
-					+ (deactivated ? ChatFormatting.RED+""+ChatFormatting.ITALIC+"disabled" : ChatFormatting.GREEN+""+ChatFormatting.ITALIC+"enabled")), UUID.randomUUID());
+				!world.isClientSide() && BlockArmor.key.isKeyDown(player) && !player.getCooldowns().isOnCooldown(stack)) {
+			boolean deactivated = !SetEffect.customBoolean(stack, "deactivated");
+			SetEffect.setCustomBoolean(stack, "deactivated", deactivated);
+			player.sendSystemMessage(Component.translatable(ChatFormatting.GRAY+""+ChatFormatting.ITALIC+"Illuminated set effect "
+					+ (deactivated ? ChatFormatting.RED+""+ChatFormatting.ITALIC+"disabled" : ChatFormatting.GREEN+""+ChatFormatting.ITALIC+"enabled")));
 			this.setCooldown(player, 10);
 		}
 
 		//set block at head level to BlockMovingLightSource
 		if (ArmorSet.getFirstSetItem(player, this) == stack &&
-				!world.isClientSide && world.isEmptyBlock(player.blockPosition().above()) && 
+				!world.isClientSide() && world.isEmptyBlock(player.blockPosition().above()) && 
 				world.getBrightness(LightLayer.BLOCK, player.blockPosition().above()) < lightLevel &&
-				!stack.getTag().getBoolean("deactivated")) {
+				!SetEffect.customBoolean(stack, "deactivated")) {
 			BlockPos pos = player.blockPosition().above();
 			BlockState state = ModBlocks.MOVING_LIGHT_SOURCE.defaultBlockState().setValue(BlockMovingLightSource.LIGHT_LEVEL, lightLevel);
 			world.setBlockAndUpdate(pos, state);

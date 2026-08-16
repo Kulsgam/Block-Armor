@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.UUID;
 
 import org.jetbrains.annotations.Nullable;
 
@@ -13,13 +12,15 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 
 import net.minecraft.ChatFormatting;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.network.chat.TextComponent;
-import net.minecraft.network.chat.TranslatableComponent;
-import net.minecraft.resources.ResourceLocation;
+
+
+import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -33,12 +34,11 @@ import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
-import twopiradians.blockArmor.client.gui.EntityGuiPlayer;
-import twopiradians.blockArmor.client.key.KeyActivateSetEffect;
 import twopiradians.blockArmor.common.BlockArmor;
 import twopiradians.blockArmor.common.config.Config;
 import twopiradians.blockArmor.common.item.ArmorSet;
@@ -46,12 +46,12 @@ import twopiradians.blockArmor.common.item.BlockArmorItem;
 
 public class SetEffect {
 
-	public static final UUID ATTACK_SPEED_UUID = UUID.fromString("3094e67f-88f1-4d81-a59d-655d4e7e8065");
-	public static final UUID ATTACK_DAMAGE_UUID = UUID.fromString("d7dfa4ea-1cdf-4dd9-8842-883d7448cb00");
-	protected static final UUID MOVEMENT_SPEED_UUID = UUID.fromString("308e48ee-a300-4846-9b56-05e53e35eb8f");
-	protected static final UUID KNOCKBACK_RESISTANCE_UUID = UUID.fromString("c8bb1118-78be-4864-9de3-a718047d28bd");
-	protected static final UUID MAX_HEALTH_UUID = UUID.fromString("0fefa40c-fd5a-4019-a25e-7fffc8dcf621");
-	protected static final UUID LUCK_UUID = UUID.fromString("537fd0e2-78ef-4dd3-affb-959ff059b1bd");
+	public static final Identifier ATTACK_SPEED_UUID = Identifier.fromNamespaceAndPath(BlockArmor.MODID, "set_effect/attack_speed");
+	public static final Identifier ATTACK_DAMAGE_UUID = Identifier.fromNamespaceAndPath(BlockArmor.MODID, "set_effect/attack_damage");
+	protected static final Identifier MOVEMENT_SPEED_UUID = Identifier.fromNamespaceAndPath(BlockArmor.MODID, "set_effect/movement_speed");
+	protected static final Identifier KNOCKBACK_RESISTANCE_UUID = Identifier.fromNamespaceAndPath(BlockArmor.MODID, "set_effect/knockback_resistance");
+	protected static final Identifier MAX_HEALTH_UUID = Identifier.fromNamespaceAndPath(BlockArmor.MODID, "set_effect/max_health");
+	protected static final Identifier LUCK_UUID = Identifier.fromNamespaceAndPath(BlockArmor.MODID, "set_effect/luck");
 
 	public static HashMap<String, SetEffect> nameToSetEffectMap = Maps.newHashMap();
 
@@ -147,17 +147,24 @@ public class SetEffect {
 
 	/**Checks if block's registry name contains any of the provided strings (with or without capitalized first letter)*/
 	public static boolean registryNameContains(Block block, String... strings) {
-		try { // TODO only work for " word ", "<eof>word ", " word<eof>", "<eof>word<eof>" (NOT "asdfWord")
-			String registryName = net.minecraft.core.Registry.BLOCK.getKey(block).getPath();
-			String displayName = new ItemStack(block, 1).getHoverName().getContents();
-			for (String string : strings) {
-				if (registryName.contains(string) || registryName.contains(string.substring(0, 1).toUpperCase()+string.substring(1)) ||
-						displayName.contains(string.substring(0, 1).toUpperCase()+string.substring(1)))
-					return true;
-			}
+		// Item components are not necessarily bound while generated armor sets are
+		// discovered on 26.1.  A failed display-name lookup must not suppress the
+		// registry-path match that the original implementation primarily used.
+		String registryName;
+		try {
+			registryName = net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(block).getPath();
+		} catch (Exception exception) {
+			registryName = "";
 		}
-		catch (Exception e) {
-			return false;
+		String displayName = "";
+		try {
+			displayName = new ItemStack(block, 1).getHoverName().getString();
+		} catch (Exception ignored) {
+		}
+		for (String string : strings) {
+			String capitalized = string.substring(0, 1).toUpperCase() + string.substring(1);
+			if (registryName.contains(string) || registryName.contains(capitalized) || displayName.contains(capitalized))
+				return true;
 		}
 
 		return false;
@@ -185,41 +192,49 @@ public class SetEffect {
 	}
 
 	/**Damage worn armor with this effect, if enabled in config - split damage amongst items prioritizing highest durability items*/
-	protected void damageArmor(LivingEntity entity, int amount, boolean ignoreConfig) {
-		if ((!ignoreConfig && !Config.effectsUseDurability) || entity == null || entity.level.isClientSide)
-			return;
+    protected void damageArmor(LivingEntity entity, int amount, boolean ignoreConfig) {
+        if ((!ignoreConfig && !Config.effectsUseDurability) || entity == null || entity.level().isClientSide())
+            return;
 
-		//get list of all worn armor with this effect
-		ArrayList<ItemStack> armor = new ArrayList<ItemStack>();
-		for (EquipmentSlot slot : ArmorSet.SLOTS) {
-			ItemStack stack = entity.getItemBySlot(slot);
-			if (stack != null && stack.getItem() instanceof BlockArmorItem && 
-					twopiradians.blockArmor.common.item.CombinedArmorData.hasEffect(stack, this))
-				armor.add(stack);
-		}
+        // get list of all worn armor with this effect
+        ArrayList<ItemStack> armor = new ArrayList<ItemStack>();
+        for (EquipmentSlot slot : ArmorSet.SLOTS) {
+            ItemStack stack = entity.getItemBySlot(slot);
+            if (stack != null && stack.getItem() instanceof BlockArmorItem &&
+                    twopiradians.blockArmor.common.item.CombinedArmorData.hasEffect(stack, this))
+                armor.add(stack);
+        }
 
-		for (int i=0; i<amount; ++i) {
-			//find item with highest durability
-			ItemStack highestDur = null;
-			for (ItemStack stack : armor) {
-				if (!stack.isEmpty() && (highestDur == null || 
-						stack.getMaxDamage()-stack.getDamageValue() > 
-				highestDur.getMaxDamage()-highestDur.getDamageValue()))
-					highestDur = stack;
-			}
-			//if item will break, play sound and spawn particles and remove from armor
-			if (highestDur != null && highestDur.getMaxDamage()-highestDur.getDamageValue() == 0) {
-				armor.remove(highestDur);
+        BlockArmorItem.beginDamageContext(entity);
+        try {
+            for (int i=0; i<amount; ++i) {
+                // find item with highest durability
+                ItemStack highestDur = null;
+                for (ItemStack stack : armor) {
+                    if (!stack.isEmpty() && (highestDur == null ||
+                            stack.getMaxDamage()-stack.getDamageValue() >
+                    highestDur.getMaxDamage()-highestDur.getDamageValue()))
+                        highestDur = stack;
+                }
+                // if item will break, play sound and spawn particles and remove from armor
+                if (highestDur != null && highestDur.getMaxDamage()-highestDur.getDamageValue() == 0) {
+                    armor.remove(highestDur);
+                    if (highestDur.getItem() instanceof BlockArmorItem
+                            && twopiradians.blockArmor.common.item.CombinedArmorData.hasEffect(highestDur, SetEffect.HOARDER))
+                        SetEffect.HOARDER.onBreak(highestDur, entity);
 
-				//play sound - item particles crash on server (because entity.renderBrokenItemStack() doesn't work on server
-				entity.level.playSound(null, entity.blockPosition(), SoundEvents.ITEM_BREAK, 
-						SoundSource.PLAYERS, 0.8F, 0.8F + entity.level.random.nextFloat() * 0.4F);
-				highestDur.shrink(1);
-			}
-			else if (highestDur != null)
-				highestDur.hurtAndBreak(1, entity, (e) -> {}); 
-		}
-	}
+                    // play sound - item particles crash on server (because entity.renderBrokenItemStack() doesn't work on server
+                    entity.level().playSound(null, entity.blockPosition(), SoundEvents.ITEM_BREAK.value(),
+                            SoundSource.PLAYERS, 0.8F, 0.8F + entity.level().getRandom().nextFloat() * 0.4F);
+                    highestDur.shrink(1);
+                }
+                else if (highestDur != null)
+                    highestDur.hurtAndBreak(1, entity, entity.getEquipmentSlotForItem(highestDur));
+            }
+        } finally {
+            BlockArmorItem.endDamageContext();
+        }
+    }
 
 	/**Set cooldown for all worn BlockArmorItem on player for specified ticks*/
 	protected void setCooldown(Player player, int ticks) {
@@ -228,13 +243,13 @@ public class SetEffect {
 				ItemStack stack = player.getItemBySlot(slot);
 				if (stack != null && stack.getItem() instanceof BlockArmorItem && 
 						twopiradians.blockArmor.common.item.CombinedArmorData.hasEffect(stack, this))
-					player.getCooldowns().addCooldown(stack.getItem(), ticks);
+					player.getCooldowns().addCooldown(stack, ticks);
 			}
 	}
 
 	/**Only called when player wearing full, enabled set*/
 	public void onArmorTick(Level world, Player player, ItemStack stack) {
-		if (!world.isClientSide && ArmorSet.getFirstSetItem(player, this) == stack) {			
+		if (!world.isClientSide() && ArmorSet.getFirstSetItem(player, this) == stack) {			
 			//apply potion effects
 			for (MobEffectInstance potionEffect : this.potionEffects)
 				if (this.shouldApplyEffect(potionEffect, world, player, stack))
@@ -243,61 +258,71 @@ public class SetEffect {
 	}
 
 	/**Modified from EnchantmentHelper#getEnchantmentLevel to use loc instead of enchantId*/
-	public static int getEnchantmentLevel(ResourceLocation loc, ItemStack stack) {
-		if (stack.isEmpty())
-			return 0;
-		else {
-			ListTag listnbt = stack.getEnchantmentTags();
-
-			for (int i = 0; i < listnbt.size(); ++i) {
-				CompoundTag compoundnbt = listnbt.getCompound(i);
-				ResourceLocation resourcelocation1 = ResourceLocation.tryParse(compoundnbt.getString("id"));
-				if (resourcelocation1 != null && resourcelocation1.equals(loc)) 
-					return Mth.clamp(compoundnbt.getInt("lvl"), 0, 255);
-			}
-
-			return 0;
-		}
+	public static int getEnchantmentLevel(Identifier loc, ItemStack stack) {
+		if (stack.isEmpty()) return 0;
+		for (var entry : stack.getOrDefault(DataComponents.ENCHANTMENTS,
+				net.minecraft.world.item.enchantment.ItemEnchantments.EMPTY).entrySet())
+			if (entry.getKey().unwrapKey().map(key -> key.identifier().equals(loc)).orElse(false))
+				return Math.max(0, entry.getIntValue());
+		return 0;
 	}
 
 	public void onUpdate(ItemStack stack, Level world, Entity entity, int slot, boolean isSelected) {
-		if (!world.isClientSide) {
-			//do enchantments
-			if (!this.enchantments.isEmpty()) {
-				ListTag enchantNbt = stack.getEnchantmentTags();
-				for (EnchantmentData enchant : this.enchantments) {
-					if (((BlockArmorItem)stack.getItem()).getSlot() != enchant.slot)
-						continue;
-					//see if it has enchant already
-					boolean hasEnchant = getEnchantmentLevel(enchant.loc, stack) >= enchant.level;
+		if (!this.enchantments.isEmpty()) reconcileEnchantments(stack, world, entity);
+	}
 
-					//should remove enchantment
-					if (hasEnchant && (!(entity instanceof LivingEntity) || 
-							!ArmorSet.getWornSetEffects((LivingEntity) entity).contains(this) || !this.isEnabled()) ||
-							((LivingEntity) entity).getItemBySlot(((BlockArmorItem)stack.getItem()).getSlot()) != stack) {
-						for (int i=enchantNbt.size()-1; i>=0; i--)
-							if (enchantNbt.getCompound(i).getBoolean(BlockArmor.MODID+" enchant"))
-								enchantNbt.remove(i);
-						stack.addTagElement("Enchantments", enchantNbt);
-					}
-					//should add enchantment
-					else if (!hasEnchant && 
-							((LivingEntity) entity).getItemBySlot(((BlockArmorItem)stack.getItem()).getSlot()) == stack &&
-							ArmorSet.getWornSetEffects((LivingEntity) entity).contains(this) && this.isEnabled()) {
-						CompoundTag nbt = new CompoundTag();
-						nbt.putString("id", enchant.loc.toString());
-						nbt.putShort("lvl", enchant.level);
-						nbt.putBoolean(BlockArmor.MODID+" enchant", true);
-						enchantNbt.add(0, nbt);
-						stack.addTagElement("Enchantments", enchantNbt);
-					}
-				}
-				if (enchantNbt.isEmpty())
-					stack.getTag().remove("Enchantments");
-				else
-					stack.getTag().put("Enchantments", enchantNbt);
+	public static void reconcileEnchantments(ItemStack stack, Level world, Entity entity) {
+		if (world.isClientSide() || !(entity instanceof LivingEntity living)
+				|| !(stack.getItem() instanceof BlockArmorItem armor)) return;
+		java.util.Map<ResourceKey<Enchantment>, Integer> wanted = new java.util.LinkedHashMap<>();
+		if (living.getItemBySlot(armor.getSlot()) == stack) {
+			java.util.Set<SetEffect> worn = ArmorSet.getWornSetEffects(living);
+			for (SetEffect effect : twopiradians.blockArmor.common.item.CombinedArmorData.effects(stack)) {
+				if (!effect.isEnabled() || !worn.contains(effect)) continue;
+				for (EnchantmentData enchantment : effect.enchantments)
+					if (enchantment.slot == armor.getSlot()) wanted.merge(enchantment.ench, (int) enchantment.level, Math::max);
 			}
 		}
+		updateInjectedEnchantments(stack, world, wanted);
+	}
+
+	private static final String INJECTED_ENCHANTMENTS = BlockArmor.MODID + " injectedEnchantments";
+
+	/**
+	 * Applies set enchantments through the component API and records each
+	 * pre-existing level so unequipping a set restores player-applied enchantments
+	 * exactly rather than deleting or downgrading them.
+	 */
+	private static void updateInjectedEnchantments(ItemStack stack, Level world,
+			java.util.Map<ResourceKey<Enchantment>, Integer> wanted) {
+		var registry = world.registryAccess().lookupOrThrow(net.minecraft.core.registries.Registries.ENCHANTMENT);
+		CompoundTag originals = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag()
+				.getCompound(INJECTED_ENCHANTMENTS).orElseGet(CompoundTag::new);
+		var mutable = new net.minecraft.world.item.enchantment.ItemEnchantments.Mutable(
+				stack.getOrDefault(DataComponents.ENCHANTMENTS, net.minecraft.world.item.enchantment.ItemEnchantments.EMPTY));
+
+		for (String id : new java.util.ArrayList<>(originals.keySet())) {
+			Identifier parsed = Identifier.tryParse(id);
+			if (parsed == null) continue;
+			ResourceKey<Enchantment> key = ResourceKey.create(net.minecraft.core.registries.Registries.ENCHANTMENT, parsed);
+			if (wanted.containsKey(key)) continue;
+			var holder = registry.get(key).orElse(null);
+			if (holder != null) mutable.set(holder, originals.getIntOr(id, 0));
+			originals.remove(id);
+		}
+		for (var wantedEntry : wanted.entrySet()) {
+			var holder = registry.get(wantedEntry.getKey()).orElse(null);
+			if (holder == null) continue;
+			String id = wantedEntry.getKey().identifier().toString();
+			if (!originals.contains(id)) originals.putInt(id, mutable.getLevel(holder));
+			mutable.set(holder, Math.max(originals.getIntOr(id, 0), wantedEntry.getValue()));
+		}
+		mutable.removeIf(holder -> mutable.getLevel(holder) <= 0);
+		stack.set(DataComponents.ENCHANTMENTS, mutable.toImmutable());
+		CustomData.update(DataComponents.CUSTOM_DATA, stack, data -> {
+			if (originals.isEmpty()) data.remove(INJECTED_ENCHANTMENTS);
+			else data.put(INJECTED_ENCHANTMENTS, originals);
+		});
 	}
 
 	/**Update stack nbt to show full set for getAttributeModifiers
@@ -310,23 +335,20 @@ public class SetEffect {
 		// later, vanilla has nothing left to trigger a refresh.
 		HashSet<SetEffect> effects = ArmorSet.calculateWornSetEffects(entity);
 		for (EquipmentSlot slot : EquipmentSlot.values())
-			if (slot.getType() == Type.ARMOR) {
+			if (slot.getType() == Type.HUMANOID_ARMOR) {
 				ItemStack stack = entity.getItemBySlot(slot);
 				if (stack != null && stack.getItem() instanceof BlockArmorItem) {
-					if (!stack.hasTag())
-						stack.setTag(new CompoundTag());
-					boolean wasWearingFullSet = stack.getTag().getBoolean("wearingFullSet");
+					boolean wasWearingFullSet = customBoolean(stack, "wearingFullSet");
 					boolean isWearingFullSet = effects.containsAll(twopiradians.blockArmor.common.item.CombinedArmorData.effects(stack));
 					if (wasWearingFullSet == isWearingFullSet) continue;
 
 					// Re-apply this exact equipment stack's modifiers around the NBT
 					// transition.  This is the Fabric equivalent of Forge's equipment
 					// change refresh and, importantly, removes Health Boost immediately.
-					if (!entity.level.isClientSide)
-						entity.getAttributes().removeAttributeModifiers(stack.getAttributeModifiers(slot));
-					stack.getTag().putBoolean("wearingFullSet", isWearingFullSet);
-					if (!entity.level.isClientSide)
-						entity.getAttributes().addTransientAttributeModifiers(stack.getAttributeModifiers(slot));
+					setCustomBoolean(stack, "wearingFullSet", isWearingFullSet);
+					// Re-equipping the stack makes the component-era equipment system
+					// rebuild its attribute modifiers after the set-state transition.
+					if (!entity.level().isClientSide()) entity.setItemSlot(slot, stack);
 				}
 			}
 	}
@@ -335,10 +357,7 @@ public class SetEffect {
 	public Multimap<Attribute, AttributeModifier> getAttributeModifiers(Multimap<Attribute, AttributeModifier> map,
 			EquipmentSlot slot, ItemStack stack) {
 
-		if (!stack.hasTag())
-			stack.setTag(new CompoundTag());
-
-		if (stack.getTag().getBoolean("wearingFullSet")) {//FIXME removing piece will reset attributes (not sure how to fix)
+		if (customBoolean(stack, "wearingFullSet")) {
 			for (Attribute attribute : this.attributes.keySet())
 				map.put(attribute, this.attributes.get(attribute));
 		}
@@ -348,21 +367,20 @@ public class SetEffect {
 
 	/**Set effect name and description if shifting*/
 	public List<Component> addInformation(ItemStack stack, boolean isShiftDown, Player player, List<Component> tooltip, TooltipFlag flagIn) {
-		MutableComponent comp = new TextComponent("");
+		MutableComponent comp = Component.literal("");
 		// set effect name
-		MutableComponent name = new TranslatableComponent("setEffect."+this.name.replaceAll(" ", "_").toLowerCase()+".name");
+		MutableComponent name = Component.translatable("setEffect."+this.name.replaceAll(" ", "_").toLowerCase()+".name");
 		// bold if active
-		if (player instanceof EntityGuiPlayer || (ArmorSet.getWornSetEffects(player).contains(this) && 
+		if (player != null && (ArmorSet.getWornSetEffects(player).contains(this) && 
 				player.getItemBySlot(((BlockArmorItem)stack.getItem()).getSlot()) == stack))
 			name.withStyle(ChatFormatting.BOLD);
 		comp.append(name);
 		// add description
 		if (isShiftDown) {
-			MutableComponent description = this.getDescription();
+			MutableComponent description = this.getDescription().copy();
 			// add button
 			if (this.usesButton)
-				description.append(ChatFormatting.BLUE+" <"+ChatFormatting.BOLD+KeyActivateSetEffect.ACTIVATE_SET_EFFECT.getTranslatedKeyMessage().getString().toUpperCase()
-						+ChatFormatting.RESET+""+ChatFormatting.BLUE+">");
+				description.append(ChatFormatting.BLUE+" <ACTIVATE>");
 			comp.append(": ").append(description);
 		}
 		// strikethrough if not enabled
@@ -375,8 +393,8 @@ public class SetEffect {
 		return tooltip;
 	}
 	
-	public TranslatableComponent getDescription() {
-		return new TranslatableComponent("setEffect."+this.name.replaceAll(" ", "_").toLowerCase()+".description", this.getDescriptionObjects());
+	public Component getDescription() {
+		return Component.translatable("setEffect."+this.name.replaceAll(" ", "_").toLowerCase()+".description", this.getDescriptionObjects());
 	}
 
 	/**Extra objects needed for description*/
@@ -432,17 +450,25 @@ public class SetEffect {
 
 	/**Used to store data for enchantments easily*/
 	protected static class EnchantmentData {
-		public Enchantment ench;
+		public ResourceKey<Enchantment> ench;
 		public Short level;
 		public EquipmentSlot slot;
-		public ResourceLocation loc;
+		public Identifier loc;
 
-		public EnchantmentData(Enchantment ench, Short level, EquipmentSlot slot) {
+		public EnchantmentData(ResourceKey<Enchantment> ench, Short level, EquipmentSlot slot) {
 			this.ench = ench;
-			this.loc = net.minecraft.core.Registry.ENCHANTMENT.getKey(ench);
+			this.loc = ench.identifier();
 			this.level = level;
 			this.slot = slot;
 		}
+	}
+
+	public static boolean customBoolean(ItemStack stack, String key) {
+		return stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag().getBooleanOr(key, false);
+	}
+
+	public static void setCustomBoolean(ItemStack stack, String key, boolean value) {
+		CustomData.update(DataComponents.CUSTOM_DATA, stack, data -> data.putBoolean(key, value));
 	}
 
 	/**Called when full set is first equipped*/

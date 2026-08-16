@@ -1,7 +1,8 @@
 package twopiradians.blockArmor.common.block;
 
 import net.minecraft.core.Registry;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.block.Block;
 import twopiradians.blockArmor.common.BlockArmor;
 
@@ -12,6 +13,6 @@ public final class ModBlocks {
     private ModBlocks() {}
 
     public static void register() {
-        Registry.register(Registry.BLOCK, new ResourceLocation(BlockArmor.MODID, "moving_light_source"), MOVING_LIGHT_SOURCE);
+        Registry.register(BuiltInRegistries.BLOCK, Identifier.fromNamespaceAndPath(BlockArmor.MODID, "moving_light_source"), MOVING_LIGHT_SOURCE);
     }
 }

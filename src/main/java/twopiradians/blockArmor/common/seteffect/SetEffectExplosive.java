@@ -21,16 +21,16 @@ public class SetEffectExplosive extends SetEffect {
 	public void onArmorTick(Level world, Player player, ItemStack stack) {
 		super.onArmorTick(world, player, stack);
 
-		if (!world.isClientSide && ArmorSet.getFirstSetItem(player, this) == stack &&
-				BlockArmor.key.isKeyDown(player) && !player.getCooldowns().isOnCooldown(stack.getItem())) 
+		if (!world.isClientSide() && ArmorSet.getFirstSetItem(player, this) == stack &&
+				BlockArmor.key.isKeyDown(player) && !player.getCooldowns().isOnCooldown(stack)) 
 			SetEffectExplosive.tryExplode(this, world, player);
 	}
 
 	/**Create explosion around the player*/
 	protected static void tryExplode(SetEffect effect, Level world, Player player) {
-		if (!world.isClientSide && player.mayBuild()) {
+		if (!world.isClientSide() && player.mayBuild()) {
 			effect.setCooldown(player, 20);
-			world.explode(player, player.getX(), player.getY()+0.5d, player.getZ(), 6f, false, Explosion.BlockInteraction.BREAK);
+			world.explode(player, player.getX(), player.getY()+0.5d, player.getZ(), 6f, false, Level.ExplosionInteraction.BLOCK);
 			effect.damageArmor(player, 10, true);
 		}
 	}

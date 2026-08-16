@@ -23,19 +23,19 @@ public class SetEffectLightweight extends SetEffect
 	@Override
 	public void onArmorTick(Level world, Player player, ItemStack stack) {
 		super.onArmorTick(world, player, stack);
-		if (!player.isShiftKeyDown() && ArmorSet.getFirstSetItem(player, this) == stack && player.getDeltaMovement().y() < 0 && !player.isOnGround() &&
+		if (!player.isShiftKeyDown() && ArmorSet.getFirstSetItem(player, this) == stack && player.getDeltaMovement().y() < 0 && !player.onGround() &&
 				world.isEmptyBlock(player.blockPosition().below(2))) {
 
-			if (world.isClientSide && player.fallDistance > 1 && player.getDeltaMovement().y() < -0.3d) {
+			if (world.isClientSide() && player.fallDistance > 1 && player.getDeltaMovement().y() < -0.3d) {
 				player.push(0, 0.076D, 0);
 				if (player.fallDistance > 5) {			
-					double driftX = world.random.nextDouble()-0.5d;
-					double driftZ = world.random.nextDouble()-0.5d;
+					double driftX = world.getRandom().nextDouble()-0.5d;
+					double driftZ = world.getRandom().nextDouble()-0.5d;
 
 					player.push(driftX/5d, 0, driftZ/5d);
 					if (Math.abs(driftX) + Math.abs(driftZ) >= 0.75d)
 						world.playSound(player, player.blockPosition(), SoundEvents.GRASS_STEP, 
-								SoundSource.PLAYERS, 0.08F, world.random.nextFloat()/5);
+								SoundSource.PLAYERS, 0.08F, world.getRandom().nextFloat()/5);
 				}
 			}
 		}

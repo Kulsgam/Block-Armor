@@ -26,26 +26,26 @@ abstract class LivingEntityMixin {
         if (!(entity instanceof net.minecraft.world.entity.player.Player)) SetEffect.onEquipmentChange(entity);
     }
     @Inject(method = "causeFallDamage", at = @At("HEAD"), cancellable = true)
-    private void blockarmor$preventFallDamage(float distance, float multiplier, DamageSource source,
+    private void blockarmor$preventFallDamage(double distance, float multiplier, DamageSource source,
             CallbackInfoReturnable<Boolean> cir) {
         if ((Object) this instanceof net.minecraft.world.entity.player.Player player
-                && SetEffectSlimey.preventsFallDamage(player, distance)) {
+                && SetEffectSlimey.preventsFallDamage(player, (float) distance)) {
             cir.setReturnValue(false);
             return;
         }
-        if (SetEffectSoft_Fall.preventsFallDamage((LivingEntity) (Object) this, distance)) {
+        if (SetEffectSoft_Fall.preventsFallDamage((LivingEntity) (Object) this, (float) distance)) {
             cir.setReturnValue(false);
         }
     }
 
     @ModifyVariable(method = "causeFallDamage", at = @At("HEAD"), argsOnly = true, ordinal = 0)
-    private float blockarmor$reduceLightweightDistance(float distance) {
+    private double blockarmor$reduceLightweightDistance(double distance) {
         LivingEntity entity = (LivingEntity) (Object) this;
         return ArmorSet.hasSetEffect(entity, SetEffect.LIGHTWEIGHT) && !entity.isShiftKeyDown()
-                ? distance / 10.0F : distance;
+                ? distance / 10.0D : distance;
     }
 
-    @ModifyVariable(method = "causeFallDamage", at = @At("HEAD"), argsOnly = true, ordinal = 1)
+    @ModifyVariable(method = "causeFallDamage", at = @At("HEAD"), argsOnly = true, index = 3)
     private float blockarmor$reduceLightweightDamage(float multiplier) {
         LivingEntity entity = (LivingEntity) (Object) this;
         if (ArmorSet.hasSetEffect(entity, SetEffect.SLIMEY) && entity.isShiftKeyDown()) multiplier *= .1F;
@@ -53,8 +53,8 @@ abstract class LivingEntityMixin {
         return multiplier * (entity.isShiftKeyDown() ? 0.1F : 0.01F);
     }
 
-    @Inject(method = "hurt", at = @At("HEAD"))
-    private void blockarmor$applyFieryAttack(DamageSource source, float amount, CallbackInfoReturnable<Boolean> cir) {
+    @Inject(method = "hurtServer", at = @At("HEAD"))
+    private void blockarmor$applyFieryAttack(net.minecraft.server.level.ServerLevel level, DamageSource source, float amount, CallbackInfoReturnable<Boolean> cir) {
         if (source.getEntity() instanceof LivingEntity attacker)
             SetEffectFiery.onAttack(attacker, (LivingEntity) (Object) this);
     }

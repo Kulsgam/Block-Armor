@@ -13,14 +13,17 @@ import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
 
 import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.Component;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.SharedSuggestionProvider;
-import net.minecraft.commands.arguments.ResourceLocationArgument;
+import net.minecraft.commands.arguments.IdentifierArgument;
 import net.minecraft.commands.synchronization.SuggestionProviders;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.chat.TranslatableComponent;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.world.item.component.CustomData;
+
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.player.Player;
@@ -41,8 +44,8 @@ public class CommandDev  {
 		add(UUID.fromString("93d28330-e1e2-447b-b552-00cb13e9afbd")); //2piradians
 	}};
 	public static HashMap<UUID, Float[]> devColors = Maps.newHashMap();			
-	private static final SuggestionProvider<CommandSourceStack> SETS_SUGGESTION = SuggestionProviders.register(new ResourceLocation(BlockArmor.MODID, "armor_sets"), (context, builder) -> { 
-		return SharedSuggestionProvider.suggestResource(setMap.keySet().stream().map((str) -> new ResourceLocation(str)).collect(Collectors.toList()), builder);  
+	private static final SuggestionProvider<CommandSourceStack> SETS_SUGGESTION = SuggestionProviders.register(Identifier.fromNamespaceAndPath(BlockArmor.MODID, "armor_sets"), (context, builder) -> { 
+		return SharedSuggestionProvider.suggestResource(setMap.keySet().stream().map(Identifier::parse).collect(Collectors.toList()), builder);  
 	});
 
 	/** Add block to list of all block names for created Armor Sets */
@@ -71,7 +74,7 @@ public class CommandDev  {
 				})
 				// /dev armor <set>
 				.then(Commands.literal("armor")
-						.then(Commands.argument("set", ResourceLocationArgument.id())
+						.then(Commands.argument("set", IdentifierArgument.id())
 								.suggests(SETS_SUGGESTION)
 								.executes((context) -> {
 									return setArmorSet(context.getSource(), context);
@@ -101,7 +104,7 @@ public class CommandDev  {
 		// needs to be inverted for some reason..
 		else
 			devColors.put(player.getUUID(), new Float[] {1-red, 1-green, 1-blue});
-		for (ServerPlayer online : player.server.getPlayerList().getPlayers())
+		for (ServerPlayer online : player.level().getServer().getPlayerList().getPlayers())
 			BlockArmor.NETWORK.sendDevColors(online);
 		return 1;
 	}
@@ -109,7 +112,7 @@ public class CommandDev  {
 	/**Sets player's armor to armor set*/
 	public static int setArmorSet(CommandSourceStack source, CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
 		ServerPlayer player = source.getPlayerOrException();
-		ResourceLocation loc = ResourceLocationArgument.getId(context, "set");
+		Identifier loc = IdentifierArgument.getId(context, "set");
 		ArmorSet set = setMap.get(loc.getPath().toLowerCase());
 		if (set != null) { //replace empty armor slots or slots with BlockArmorItem with new set's armor
 			for (EquipmentSlot slot : ArmorSet.SLOTS) {
@@ -117,14 +120,14 @@ public class CommandDev  {
 				ItemStack newStack = new ItemStack(set.getArmorForSlot(slot));
 				CompoundTag nbt = new CompoundTag();
 				nbt.putBoolean("devSpawned", true);
-				newStack.setTag(nbt);
+				CustomData.set(DataComponents.CUSTOM_DATA, newStack, nbt);
 				if (stack == null || stack.isEmpty() || stack.getItem() instanceof BlockArmorItem) 
 					player.setItemSlot(slot, newStack);
 			}
-			player.sendMessage(new TranslatableComponent(ChatFormatting.GREEN+"Spawned set for "+loc.getPath()), UUID.randomUUID());
+			player.sendSystemMessage(Component.translatable(ChatFormatting.GREEN+"Spawned set for "+loc.getPath()));
 		}
 		else {
-			player.sendMessage(new TranslatableComponent(ChatFormatting.RED+"Invalid block"), UUID.randomUUID());
+			player.sendSystemMessage(Component.translatable(ChatFormatting.RED+"Invalid block"));
 			return 0;
 		}
 		return 1;

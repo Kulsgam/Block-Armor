@@ -29,15 +29,15 @@ public class SetEffectPuller extends SetEffect {
 		super.onArmorTick(world, player, stack);
 
 		if (ArmorSet.getFirstSetItem(player, this) == stack &&
-				BlockArmor.key.isKeyDown(player) && !player.getCooldowns().isOnCooldown(stack.getItem())) {
+				BlockArmor.key.isKeyDown(player) && !player.getCooldowns().isOnCooldown(stack)) {
 			AABB aabb = player.getBoundingBox().inflate(10, 10, 10);
-			List<Entity> list = player.level.getEntities(player, aabb);
+			List<Entity> list = player.level().getEntities(player, aabb);
 			
 			if (!list.isEmpty()) {
 				Iterator<Entity> iterator = list.iterator();            
 				while (iterator.hasNext()) {
 					Entity entityCollided = iterator.next();
-					if (!entityCollided.ignoreExplosion() && !(entityCollided instanceof ItemFrame)) {
+					if (!(entityCollided instanceof ItemFrame)) {
 						double xVel = entityCollided.getX() - player.getX();
 						double yVel = entityCollided.getY() - player.getY();
 						double zVel = entityCollided.getZ() - player.getZ();
@@ -47,7 +47,7 @@ public class SetEffectPuller extends SetEffect {
 					}
 				}
 				world.playSound((Player)null, player.blockPosition(), SoundEvents.PISTON_CONTRACT, 
-						SoundSource.PLAYERS, 0.5F, world.random.nextFloat() + 0.5f);
+						SoundSource.PLAYERS, 0.5F, world.getRandom().nextFloat() + 0.5f);
 				
 				this.setCooldown(player, 40);
 				this.damageArmor(player, 1, false);

@@ -21,8 +21,8 @@ public class SetEffectFeeder extends SetEffect {
 	public void onArmorTick(Level world, Player player, ItemStack stack) {
 		super.onArmorTick(world, player, stack);
 
-		if (!player.getCooldowns().isOnCooldown(stack.getItem()) && 
-				!world.isClientSide && ArmorSet.getFirstSetItem(player, this) == stack)
+		if (!player.getCooldowns().isOnCooldown(stack) && 
+				!world.isClientSide() && ArmorSet.getFirstSetItem(player, this) == stack)
 			if (player.canEat(false)) {
 				int foodLevel = player.getFoodData().getFoodLevel();
 				int foodToFeed = Math.min(20-foodLevel, 4);
@@ -30,11 +30,11 @@ public class SetEffectFeeder extends SetEffect {
 
 				if (foodLevel < 16)
 					for (int i=0; i<2; ++i)
-						world.playSound((Player)null, player.blockPosition(), SoundEvents.GENERIC_EAT, 
-								SoundSource.PLAYERS, 0.15F, world.random.nextFloat()*0.2f + 1.0f);
+						world.playSound((Player)null, player.blockPosition(), SoundEvents.GENERIC_EAT.value(), 
+								SoundSource.PLAYERS, 0.15F, world.getRandom().nextFloat()*0.2f + 1.0f);
 				else
 					world.playSound((Player)null, player.blockPosition(), SoundEvents.PLAYER_BURP, 
-							SoundSource.PLAYERS, 0.15F, world.random.nextFloat()*0.2f + 1.0f);
+							SoundSource.PLAYERS, 0.15F, world.getRandom().nextFloat()*0.2f + 1.0f);
 				
 				this.setCooldown(player, 80);
 				this.damageArmor(player, foodToFeed, true);

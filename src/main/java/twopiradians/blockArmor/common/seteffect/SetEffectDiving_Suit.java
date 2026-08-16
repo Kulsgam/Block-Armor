@@ -25,7 +25,7 @@ public class SetEffectDiving_Suit extends SetEffect {
 	/**Should player be given potionEffect now*/
 	@Override
 	public boolean shouldApplyEffect(MobEffectInstance potionEffect, Level world, Player player, ItemStack stack) {
-		return !world.getBlockState(new BlockPos(player.getX(), player.getY()+1.7d, player.getZ())).getFluidState().isEmpty();
+		return !world.getBlockState(BlockPos.containing(player.getX(), player.getY()+1.7d, player.getZ())).getFluidState().isEmpty();
 	}
 
 	/**Should block be given this set effect*/

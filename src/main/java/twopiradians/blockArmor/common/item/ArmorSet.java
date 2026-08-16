@@ -18,9 +18,9 @@ import com.google.common.collect.Sets;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.TextComponent;
-import net.minecraft.network.chat.TranslatableComponent;
-import net.minecraft.resources.ResourceLocation;
+
+
+import net.minecraft.resources.Identifier;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
@@ -41,7 +41,6 @@ import net.minecraft.world.level.block.BushBlock;
 import net.minecraft.world.level.block.CropBlock;
 import net.minecraft.world.level.block.InfestedBlock;
 import net.minecraft.world.level.block.LiquidBlock;
-import net.minecraft.world.level.block.OreBlock;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.ShulkerBoxBlock;
 import net.minecraft.world.level.block.SlabBlock;
@@ -94,233 +93,233 @@ public class ArmorSet {
 	static {
 		TEXTURE_OVERRIDES = new HashMap<Block, TextureOverrideInfo>() {{
 			TextureOverrideInfo info = new TextureOverrideInfo();
-			info.addSlot(EquipmentSlot.CHEST, -1, new ResourceLocation(BlockArmor.MODID, "items/overrides/enchanting_table_chest"));
-			info.addSlot(EquipmentSlot.LEGS, -1, new ResourceLocation(BlockArmor.MODID, "items/overrides/enchanting_table_legs"));
+			info.addSlot(EquipmentSlot.CHEST, -1, Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/enchanting_table_chest"));
+			info.addSlot(EquipmentSlot.LEGS, -1, Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/enchanting_table_legs"));
 			put(Blocks.ENCHANTING_TABLE, info);
 			info = new TextureOverrideInfo();
-			info.addSlot(EquipmentSlot.HEAD, -1, new ResourceLocation(BlockArmor.MODID, "items/overrides/cactus_head"));
-			info.addSlot(EquipmentSlot.CHEST, -1, new ResourceLocation(BlockArmor.MODID, "items/overrides/cactus_chest"));
-			info.addSlot(EquipmentSlot.LEGS, -1, new ResourceLocation(BlockArmor.MODID, "items/overrides/cactus_legs"));
-			info.addSlot(EquipmentSlot.FEET, -1, new ResourceLocation(BlockArmor.MODID, "items/overrides/cactus_feet"));
+			info.addSlot(EquipmentSlot.HEAD, -1, Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/cactus_head"));
+			info.addSlot(EquipmentSlot.CHEST, -1, Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/cactus_chest"));
+			info.addSlot(EquipmentSlot.LEGS, -1, Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/cactus_legs"));
+			info.addSlot(EquipmentSlot.FEET, -1, Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/cactus_feet"));
 			put(Blocks.CACTUS, info);
 			info = new TextureOverrideInfo();
-			info.addSlot(EquipmentSlot.HEAD, -1, new ResourceLocation(BlockArmor.MODID, "items/overrides/sugar_cane_head"));
-			info.addSlot(EquipmentSlot.CHEST, -1, new ResourceLocation(BlockArmor.MODID, "items/overrides/sugar_cane_chest"));
-			info.addSlot(EquipmentSlot.LEGS, -1, new ResourceLocation(BlockArmor.MODID, "items/overrides/sugar_cane_legs"));
-			info.addSlot(EquipmentSlot.FEET, -1, new ResourceLocation(BlockArmor.MODID, "items/overrides/sugar_cane_feet"));
+			info.addSlot(EquipmentSlot.HEAD, -1, Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/sugar_cane_head"));
+			info.addSlot(EquipmentSlot.CHEST, -1, Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/sugar_cane_chest"));
+			info.addSlot(EquipmentSlot.LEGS, -1, Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/sugar_cane_legs"));
+			info.addSlot(EquipmentSlot.FEET, -1, Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/sugar_cane_feet"));
 			put(Blocks.SUGAR_CANE, info);
 			info = new TextureOverrideInfo();
-			info.addSlot(EquipmentSlot.HEAD, -1, new ResourceLocation(BlockArmor.MODID, "items/overrides/ender_chest_head"));
-			info.addSlot(EquipmentSlot.CHEST, -1, new ResourceLocation(BlockArmor.MODID, "items/overrides/ender_chest_chest"));
-			info.addSlot(EquipmentSlot.LEGS, -1, new ResourceLocation(BlockArmor.MODID, "items/overrides/ender_chest_legs"));
-			info.addSlot(EquipmentSlot.FEET, -1, new ResourceLocation(BlockArmor.MODID, "items/overrides/ender_chest_feet"));
+			info.addSlot(EquipmentSlot.HEAD, -1, Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/ender_chest_head"));
+			info.addSlot(EquipmentSlot.CHEST, -1, Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/ender_chest_chest"));
+			info.addSlot(EquipmentSlot.LEGS, -1, Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/ender_chest_legs"));
+			info.addSlot(EquipmentSlot.FEET, -1, Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/ender_chest_feet"));
 			put(Blocks.ENDER_CHEST, info);
 			info = new TextureOverrideInfo();
-			info.addSlot(EquipmentSlot.HEAD, -1, new ResourceLocation(BlockArmor.MODID, "items/overrides/chest_head"));
-			info.addSlot(EquipmentSlot.CHEST, -1, new ResourceLocation(BlockArmor.MODID, "items/overrides/chest_chest"));
-			info.addSlot(EquipmentSlot.LEGS, -1, new ResourceLocation(BlockArmor.MODID, "items/overrides/chest_legs"));
-			info.addSlot(EquipmentSlot.FEET, -1, new ResourceLocation(BlockArmor.MODID, "items/overrides/chest_feet"));
+			info.addSlot(EquipmentSlot.HEAD, -1, Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/chest_head"));
+			info.addSlot(EquipmentSlot.CHEST, -1, Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/chest_chest"));
+			info.addSlot(EquipmentSlot.LEGS, -1, Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/chest_legs"));
+			info.addSlot(EquipmentSlot.FEET, -1, Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/chest_feet"));
 			put(Blocks.CHEST, info);
 			info = new TextureOverrideInfo();
-			info.addSlot(EquipmentSlot.HEAD, -1, new ResourceLocation(BlockArmor.MODID, "items/overrides/composter_head"));
+			info.addSlot(EquipmentSlot.HEAD, -1, Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/composter_head"));
 			put(Blocks.COMPOSTER, info); 
 			info = new TextureOverrideInfo();
-			info.addSlot(EquipmentSlot.HEAD, -1, new ResourceLocation(BlockArmor.MODID, "items/overrides/shulker_box_head"));
-			info.addSlot(EquipmentSlot.CHEST, -1, new ResourceLocation(BlockArmor.MODID, "items/overrides/shulker_box_chest"));
-			info.addSlot(EquipmentSlot.LEGS, -1, new ResourceLocation(BlockArmor.MODID, "items/overrides/shulker_box_legs"));
-			info.addSlot(EquipmentSlot.FEET, -1, new ResourceLocation(BlockArmor.MODID, "items/overrides/shulker_box_feet"));
+			info.addSlot(EquipmentSlot.HEAD, -1, Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/shulker_box_head"));
+			info.addSlot(EquipmentSlot.CHEST, -1, Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/shulker_box_chest"));
+			info.addSlot(EquipmentSlot.LEGS, -1, Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/shulker_box_legs"));
+			info.addSlot(EquipmentSlot.FEET, -1, Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/shulker_box_feet"));
 			put(Blocks.SHULKER_BOX, info); 
 			info = new TextureOverrideInfo();
-			info.addSlot(EquipmentSlot.HEAD, ((ShulkerBoxBlock)(Blocks.WHITE_SHULKER_BOX)).getColor().getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_shulker_box_head"));
-			info.addSlot(EquipmentSlot.CHEST, ((ShulkerBoxBlock)(Blocks.WHITE_SHULKER_BOX)).getColor().getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_shulker_box_chest"));
-			info.addSlot(EquipmentSlot.LEGS, ((ShulkerBoxBlock)(Blocks.WHITE_SHULKER_BOX)).getColor().getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_shulker_box_legs"));
-			info.addSlot(EquipmentSlot.FEET, ((ShulkerBoxBlock)(Blocks.WHITE_SHULKER_BOX)).getColor().getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_shulker_box_feet"));
+			info.addSlot(EquipmentSlot.HEAD, ((ShulkerBoxBlock)(Blocks.WHITE_SHULKER_BOX)).getColor().getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_shulker_box_head"));
+			info.addSlot(EquipmentSlot.CHEST, ((ShulkerBoxBlock)(Blocks.WHITE_SHULKER_BOX)).getColor().getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_shulker_box_chest"));
+			info.addSlot(EquipmentSlot.LEGS, ((ShulkerBoxBlock)(Blocks.WHITE_SHULKER_BOX)).getColor().getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_shulker_box_legs"));
+			info.addSlot(EquipmentSlot.FEET, ((ShulkerBoxBlock)(Blocks.WHITE_SHULKER_BOX)).getColor().getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_shulker_box_feet"));
 			put(Blocks.WHITE_SHULKER_BOX, info); 
 			info = new TextureOverrideInfo();
-			info.addSlot(EquipmentSlot.HEAD, ((ShulkerBoxBlock)(Blocks.ORANGE_SHULKER_BOX)).getColor().getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_shulker_box_head"));
-			info.addSlot(EquipmentSlot.CHEST, ((ShulkerBoxBlock)(Blocks.ORANGE_SHULKER_BOX)).getColor().getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_shulker_box_chest"));
-			info.addSlot(EquipmentSlot.LEGS, ((ShulkerBoxBlock)(Blocks.ORANGE_SHULKER_BOX)).getColor().getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_shulker_box_legs"));
-			info.addSlot(EquipmentSlot.FEET, ((ShulkerBoxBlock)(Blocks.ORANGE_SHULKER_BOX)).getColor().getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_shulker_box_feet"));
+			info.addSlot(EquipmentSlot.HEAD, ((ShulkerBoxBlock)(Blocks.ORANGE_SHULKER_BOX)).getColor().getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_shulker_box_head"));
+			info.addSlot(EquipmentSlot.CHEST, ((ShulkerBoxBlock)(Blocks.ORANGE_SHULKER_BOX)).getColor().getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_shulker_box_chest"));
+			info.addSlot(EquipmentSlot.LEGS, ((ShulkerBoxBlock)(Blocks.ORANGE_SHULKER_BOX)).getColor().getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_shulker_box_legs"));
+			info.addSlot(EquipmentSlot.FEET, ((ShulkerBoxBlock)(Blocks.ORANGE_SHULKER_BOX)).getColor().getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_shulker_box_feet"));
 			put(Blocks.ORANGE_SHULKER_BOX, info); 
 			info = new TextureOverrideInfo();
-			info.addSlot(EquipmentSlot.HEAD, ((ShulkerBoxBlock)(Blocks.MAGENTA_SHULKER_BOX)).getColor().getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_shulker_box_head"));
-			info.addSlot(EquipmentSlot.CHEST, ((ShulkerBoxBlock)(Blocks.MAGENTA_SHULKER_BOX)).getColor().getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_shulker_box_chest"));
-			info.addSlot(EquipmentSlot.LEGS, ((ShulkerBoxBlock)(Blocks.MAGENTA_SHULKER_BOX)).getColor().getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_shulker_box_legs"));
-			info.addSlot(EquipmentSlot.FEET, ((ShulkerBoxBlock)(Blocks.MAGENTA_SHULKER_BOX)).getColor().getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_shulker_box_feet"));
+			info.addSlot(EquipmentSlot.HEAD, ((ShulkerBoxBlock)(Blocks.MAGENTA_SHULKER_BOX)).getColor().getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_shulker_box_head"));
+			info.addSlot(EquipmentSlot.CHEST, ((ShulkerBoxBlock)(Blocks.MAGENTA_SHULKER_BOX)).getColor().getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_shulker_box_chest"));
+			info.addSlot(EquipmentSlot.LEGS, ((ShulkerBoxBlock)(Blocks.MAGENTA_SHULKER_BOX)).getColor().getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_shulker_box_legs"));
+			info.addSlot(EquipmentSlot.FEET, ((ShulkerBoxBlock)(Blocks.MAGENTA_SHULKER_BOX)).getColor().getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_shulker_box_feet"));
 			put(Blocks.MAGENTA_SHULKER_BOX, info); 
 			info = new TextureOverrideInfo();
-			info.addSlot(EquipmentSlot.HEAD, ((ShulkerBoxBlock)(Blocks.LIGHT_BLUE_SHULKER_BOX)).getColor().getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_shulker_box_head"));
-			info.addSlot(EquipmentSlot.CHEST, ((ShulkerBoxBlock)(Blocks.LIGHT_BLUE_SHULKER_BOX)).getColor().getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_shulker_box_chest"));
-			info.addSlot(EquipmentSlot.LEGS, ((ShulkerBoxBlock)(Blocks.LIGHT_BLUE_SHULKER_BOX)).getColor().getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_shulker_box_legs"));
-			info.addSlot(EquipmentSlot.FEET, ((ShulkerBoxBlock)(Blocks.LIGHT_BLUE_SHULKER_BOX)).getColor().getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_shulker_box_feet"));
+			info.addSlot(EquipmentSlot.HEAD, ((ShulkerBoxBlock)(Blocks.LIGHT_BLUE_SHULKER_BOX)).getColor().getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_shulker_box_head"));
+			info.addSlot(EquipmentSlot.CHEST, ((ShulkerBoxBlock)(Blocks.LIGHT_BLUE_SHULKER_BOX)).getColor().getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_shulker_box_chest"));
+			info.addSlot(EquipmentSlot.LEGS, ((ShulkerBoxBlock)(Blocks.LIGHT_BLUE_SHULKER_BOX)).getColor().getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_shulker_box_legs"));
+			info.addSlot(EquipmentSlot.FEET, ((ShulkerBoxBlock)(Blocks.LIGHT_BLUE_SHULKER_BOX)).getColor().getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_shulker_box_feet"));
 			put(Blocks.LIGHT_BLUE_SHULKER_BOX, info); 
 			info = new TextureOverrideInfo();
-			info.addSlot(EquipmentSlot.HEAD, ((ShulkerBoxBlock)(Blocks.YELLOW_SHULKER_BOX)).getColor().getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_shulker_box_head"));
-			info.addSlot(EquipmentSlot.CHEST, ((ShulkerBoxBlock)(Blocks.YELLOW_SHULKER_BOX)).getColor().getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_shulker_box_chest"));
-			info.addSlot(EquipmentSlot.LEGS, ((ShulkerBoxBlock)(Blocks.YELLOW_SHULKER_BOX)).getColor().getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_shulker_box_legs"));
-			info.addSlot(EquipmentSlot.FEET, ((ShulkerBoxBlock)(Blocks.YELLOW_SHULKER_BOX)).getColor().getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_shulker_box_feet"));
+			info.addSlot(EquipmentSlot.HEAD, ((ShulkerBoxBlock)(Blocks.YELLOW_SHULKER_BOX)).getColor().getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_shulker_box_head"));
+			info.addSlot(EquipmentSlot.CHEST, ((ShulkerBoxBlock)(Blocks.YELLOW_SHULKER_BOX)).getColor().getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_shulker_box_chest"));
+			info.addSlot(EquipmentSlot.LEGS, ((ShulkerBoxBlock)(Blocks.YELLOW_SHULKER_BOX)).getColor().getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_shulker_box_legs"));
+			info.addSlot(EquipmentSlot.FEET, ((ShulkerBoxBlock)(Blocks.YELLOW_SHULKER_BOX)).getColor().getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_shulker_box_feet"));
 			put(Blocks.YELLOW_SHULKER_BOX, info); 
 			info = new TextureOverrideInfo();
-			info.addSlot(EquipmentSlot.HEAD, ((ShulkerBoxBlock)(Blocks.LIME_SHULKER_BOX)).getColor().getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_shulker_box_head"));
-			info.addSlot(EquipmentSlot.CHEST, ((ShulkerBoxBlock)(Blocks.LIME_SHULKER_BOX)).getColor().getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_shulker_box_chest"));
-			info.addSlot(EquipmentSlot.LEGS, ((ShulkerBoxBlock)(Blocks.LIME_SHULKER_BOX)).getColor().getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_shulker_box_legs"));
-			info.addSlot(EquipmentSlot.FEET, ((ShulkerBoxBlock)(Blocks.LIME_SHULKER_BOX)).getColor().getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_shulker_box_feet"));
+			info.addSlot(EquipmentSlot.HEAD, ((ShulkerBoxBlock)(Blocks.LIME_SHULKER_BOX)).getColor().getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_shulker_box_head"));
+			info.addSlot(EquipmentSlot.CHEST, ((ShulkerBoxBlock)(Blocks.LIME_SHULKER_BOX)).getColor().getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_shulker_box_chest"));
+			info.addSlot(EquipmentSlot.LEGS, ((ShulkerBoxBlock)(Blocks.LIME_SHULKER_BOX)).getColor().getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_shulker_box_legs"));
+			info.addSlot(EquipmentSlot.FEET, ((ShulkerBoxBlock)(Blocks.LIME_SHULKER_BOX)).getColor().getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_shulker_box_feet"));
 			put(Blocks.LIME_SHULKER_BOX, info); 
 			info = new TextureOverrideInfo();
-			info.addSlot(EquipmentSlot.HEAD, ((ShulkerBoxBlock)(Blocks.PINK_SHULKER_BOX)).getColor().getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_shulker_box_head"));
-			info.addSlot(EquipmentSlot.CHEST, ((ShulkerBoxBlock)(Blocks.PINK_SHULKER_BOX)).getColor().getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_shulker_box_chest"));
-			info.addSlot(EquipmentSlot.LEGS, ((ShulkerBoxBlock)(Blocks.PINK_SHULKER_BOX)).getColor().getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_shulker_box_legs"));
-			info.addSlot(EquipmentSlot.FEET, ((ShulkerBoxBlock)(Blocks.PINK_SHULKER_BOX)).getColor().getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_shulker_box_feet"));
+			info.addSlot(EquipmentSlot.HEAD, ((ShulkerBoxBlock)(Blocks.PINK_SHULKER_BOX)).getColor().getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_shulker_box_head"));
+			info.addSlot(EquipmentSlot.CHEST, ((ShulkerBoxBlock)(Blocks.PINK_SHULKER_BOX)).getColor().getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_shulker_box_chest"));
+			info.addSlot(EquipmentSlot.LEGS, ((ShulkerBoxBlock)(Blocks.PINK_SHULKER_BOX)).getColor().getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_shulker_box_legs"));
+			info.addSlot(EquipmentSlot.FEET, ((ShulkerBoxBlock)(Blocks.PINK_SHULKER_BOX)).getColor().getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_shulker_box_feet"));
 			put(Blocks.PINK_SHULKER_BOX, info); 
 			info = new TextureOverrideInfo();
-			info.addSlot(EquipmentSlot.HEAD, ((ShulkerBoxBlock)(Blocks.GRAY_SHULKER_BOX)).getColor().getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_shulker_box_head"));
-			info.addSlot(EquipmentSlot.CHEST, ((ShulkerBoxBlock)(Blocks.GRAY_SHULKER_BOX)).getColor().getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_shulker_box_chest"));
-			info.addSlot(EquipmentSlot.LEGS, ((ShulkerBoxBlock)(Blocks.GRAY_SHULKER_BOX)).getColor().getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_shulker_box_legs"));
-			info.addSlot(EquipmentSlot.FEET, ((ShulkerBoxBlock)(Blocks.GRAY_SHULKER_BOX)).getColor().getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_shulker_box_feet"));
+			info.addSlot(EquipmentSlot.HEAD, ((ShulkerBoxBlock)(Blocks.GRAY_SHULKER_BOX)).getColor().getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_shulker_box_head"));
+			info.addSlot(EquipmentSlot.CHEST, ((ShulkerBoxBlock)(Blocks.GRAY_SHULKER_BOX)).getColor().getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_shulker_box_chest"));
+			info.addSlot(EquipmentSlot.LEGS, ((ShulkerBoxBlock)(Blocks.GRAY_SHULKER_BOX)).getColor().getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_shulker_box_legs"));
+			info.addSlot(EquipmentSlot.FEET, ((ShulkerBoxBlock)(Blocks.GRAY_SHULKER_BOX)).getColor().getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_shulker_box_feet"));
 			put(Blocks.GRAY_SHULKER_BOX, info); 
 			info = new TextureOverrideInfo();
-			info.addSlot(EquipmentSlot.HEAD, ((ShulkerBoxBlock)(Blocks.LIGHT_GRAY_SHULKER_BOX)).getColor().getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_shulker_box_head"));
-			info.addSlot(EquipmentSlot.CHEST, ((ShulkerBoxBlock)(Blocks.LIGHT_GRAY_SHULKER_BOX)).getColor().getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_shulker_box_chest"));
-			info.addSlot(EquipmentSlot.LEGS, ((ShulkerBoxBlock)(Blocks.LIGHT_GRAY_SHULKER_BOX)).getColor().getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_shulker_box_legs"));
-			info.addSlot(EquipmentSlot.FEET, ((ShulkerBoxBlock)(Blocks.LIGHT_GRAY_SHULKER_BOX)).getColor().getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_shulker_box_feet"));
+			info.addSlot(EquipmentSlot.HEAD, ((ShulkerBoxBlock)(Blocks.LIGHT_GRAY_SHULKER_BOX)).getColor().getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_shulker_box_head"));
+			info.addSlot(EquipmentSlot.CHEST, ((ShulkerBoxBlock)(Blocks.LIGHT_GRAY_SHULKER_BOX)).getColor().getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_shulker_box_chest"));
+			info.addSlot(EquipmentSlot.LEGS, ((ShulkerBoxBlock)(Blocks.LIGHT_GRAY_SHULKER_BOX)).getColor().getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_shulker_box_legs"));
+			info.addSlot(EquipmentSlot.FEET, ((ShulkerBoxBlock)(Blocks.LIGHT_GRAY_SHULKER_BOX)).getColor().getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_shulker_box_feet"));
 			put(Blocks.LIGHT_GRAY_SHULKER_BOX, info); 
 			info = new TextureOverrideInfo();
-			info.addSlot(EquipmentSlot.HEAD, ((ShulkerBoxBlock)(Blocks.CYAN_SHULKER_BOX)).getColor().getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_shulker_box_head"));
-			info.addSlot(EquipmentSlot.CHEST, ((ShulkerBoxBlock)(Blocks.CYAN_SHULKER_BOX)).getColor().getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_shulker_box_chest"));
-			info.addSlot(EquipmentSlot.LEGS, ((ShulkerBoxBlock)(Blocks.CYAN_SHULKER_BOX)).getColor().getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_shulker_box_legs"));
-			info.addSlot(EquipmentSlot.FEET, ((ShulkerBoxBlock)(Blocks.CYAN_SHULKER_BOX)).getColor().getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_shulker_box_feet"));
+			info.addSlot(EquipmentSlot.HEAD, ((ShulkerBoxBlock)(Blocks.CYAN_SHULKER_BOX)).getColor().getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_shulker_box_head"));
+			info.addSlot(EquipmentSlot.CHEST, ((ShulkerBoxBlock)(Blocks.CYAN_SHULKER_BOX)).getColor().getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_shulker_box_chest"));
+			info.addSlot(EquipmentSlot.LEGS, ((ShulkerBoxBlock)(Blocks.CYAN_SHULKER_BOX)).getColor().getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_shulker_box_legs"));
+			info.addSlot(EquipmentSlot.FEET, ((ShulkerBoxBlock)(Blocks.CYAN_SHULKER_BOX)).getColor().getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_shulker_box_feet"));
 			put(Blocks.CYAN_SHULKER_BOX, info); 
 			info = new TextureOverrideInfo();
-			info.addSlot(EquipmentSlot.HEAD, ((ShulkerBoxBlock)(Blocks.PURPLE_SHULKER_BOX)).getColor().getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_shulker_box_head"));
-			info.addSlot(EquipmentSlot.CHEST, ((ShulkerBoxBlock)(Blocks.PURPLE_SHULKER_BOX)).getColor().getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_shulker_box_chest"));
-			info.addSlot(EquipmentSlot.LEGS, ((ShulkerBoxBlock)(Blocks.PURPLE_SHULKER_BOX)).getColor().getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_shulker_box_legs"));
-			info.addSlot(EquipmentSlot.FEET, ((ShulkerBoxBlock)(Blocks.PURPLE_SHULKER_BOX)).getColor().getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_shulker_box_feet"));
+			info.addSlot(EquipmentSlot.HEAD, ((ShulkerBoxBlock)(Blocks.PURPLE_SHULKER_BOX)).getColor().getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_shulker_box_head"));
+			info.addSlot(EquipmentSlot.CHEST, ((ShulkerBoxBlock)(Blocks.PURPLE_SHULKER_BOX)).getColor().getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_shulker_box_chest"));
+			info.addSlot(EquipmentSlot.LEGS, ((ShulkerBoxBlock)(Blocks.PURPLE_SHULKER_BOX)).getColor().getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_shulker_box_legs"));
+			info.addSlot(EquipmentSlot.FEET, ((ShulkerBoxBlock)(Blocks.PURPLE_SHULKER_BOX)).getColor().getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_shulker_box_feet"));
 			put(Blocks.PURPLE_SHULKER_BOX, info); 
 			info = new TextureOverrideInfo();
-			info.addSlot(EquipmentSlot.HEAD, ((ShulkerBoxBlock)(Blocks.BLUE_SHULKER_BOX)).getColor().getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_shulker_box_head"));
-			info.addSlot(EquipmentSlot.CHEST, ((ShulkerBoxBlock)(Blocks.BLUE_SHULKER_BOX)).getColor().getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_shulker_box_chest"));
-			info.addSlot(EquipmentSlot.LEGS, ((ShulkerBoxBlock)(Blocks.BLUE_SHULKER_BOX)).getColor().getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_shulker_box_legs"));
-			info.addSlot(EquipmentSlot.FEET, ((ShulkerBoxBlock)(Blocks.BLUE_SHULKER_BOX)).getColor().getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_shulker_box_feet"));
+			info.addSlot(EquipmentSlot.HEAD, ((ShulkerBoxBlock)(Blocks.BLUE_SHULKER_BOX)).getColor().getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_shulker_box_head"));
+			info.addSlot(EquipmentSlot.CHEST, ((ShulkerBoxBlock)(Blocks.BLUE_SHULKER_BOX)).getColor().getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_shulker_box_chest"));
+			info.addSlot(EquipmentSlot.LEGS, ((ShulkerBoxBlock)(Blocks.BLUE_SHULKER_BOX)).getColor().getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_shulker_box_legs"));
+			info.addSlot(EquipmentSlot.FEET, ((ShulkerBoxBlock)(Blocks.BLUE_SHULKER_BOX)).getColor().getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_shulker_box_feet"));
 			put(Blocks.BLUE_SHULKER_BOX, info); 
 			info = new TextureOverrideInfo();
-			info.addSlot(EquipmentSlot.HEAD, ((ShulkerBoxBlock)(Blocks.BROWN_SHULKER_BOX)).getColor().getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_shulker_box_head"));
-			info.addSlot(EquipmentSlot.CHEST, ((ShulkerBoxBlock)(Blocks.BROWN_SHULKER_BOX)).getColor().getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_shulker_box_chest"));
-			info.addSlot(EquipmentSlot.LEGS, ((ShulkerBoxBlock)(Blocks.BROWN_SHULKER_BOX)).getColor().getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_shulker_box_legs"));
-			info.addSlot(EquipmentSlot.FEET, ((ShulkerBoxBlock)(Blocks.BROWN_SHULKER_BOX)).getColor().getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_shulker_box_feet"));
+			info.addSlot(EquipmentSlot.HEAD, ((ShulkerBoxBlock)(Blocks.BROWN_SHULKER_BOX)).getColor().getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_shulker_box_head"));
+			info.addSlot(EquipmentSlot.CHEST, ((ShulkerBoxBlock)(Blocks.BROWN_SHULKER_BOX)).getColor().getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_shulker_box_chest"));
+			info.addSlot(EquipmentSlot.LEGS, ((ShulkerBoxBlock)(Blocks.BROWN_SHULKER_BOX)).getColor().getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_shulker_box_legs"));
+			info.addSlot(EquipmentSlot.FEET, ((ShulkerBoxBlock)(Blocks.BROWN_SHULKER_BOX)).getColor().getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_shulker_box_feet"));
 			put(Blocks.BROWN_SHULKER_BOX, info); 
 			info = new TextureOverrideInfo();
-			info.addSlot(EquipmentSlot.HEAD, ((ShulkerBoxBlock)(Blocks.GREEN_SHULKER_BOX)).getColor().getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_shulker_box_head"));
-			info.addSlot(EquipmentSlot.CHEST, ((ShulkerBoxBlock)(Blocks.GREEN_SHULKER_BOX)).getColor().getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_shulker_box_chest"));
-			info.addSlot(EquipmentSlot.LEGS, ((ShulkerBoxBlock)(Blocks.GREEN_SHULKER_BOX)).getColor().getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_shulker_box_legs"));
-			info.addSlot(EquipmentSlot.FEET, ((ShulkerBoxBlock)(Blocks.GREEN_SHULKER_BOX)).getColor().getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_shulker_box_feet"));
+			info.addSlot(EquipmentSlot.HEAD, ((ShulkerBoxBlock)(Blocks.GREEN_SHULKER_BOX)).getColor().getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_shulker_box_head"));
+			info.addSlot(EquipmentSlot.CHEST, ((ShulkerBoxBlock)(Blocks.GREEN_SHULKER_BOX)).getColor().getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_shulker_box_chest"));
+			info.addSlot(EquipmentSlot.LEGS, ((ShulkerBoxBlock)(Blocks.GREEN_SHULKER_BOX)).getColor().getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_shulker_box_legs"));
+			info.addSlot(EquipmentSlot.FEET, ((ShulkerBoxBlock)(Blocks.GREEN_SHULKER_BOX)).getColor().getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_shulker_box_feet"));
 			put(Blocks.GREEN_SHULKER_BOX, info); 
 			info = new TextureOverrideInfo();
-			info.addSlot(EquipmentSlot.HEAD, ((ShulkerBoxBlock)(Blocks.RED_SHULKER_BOX)).getColor().getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_shulker_box_head"));
-			info.addSlot(EquipmentSlot.CHEST, ((ShulkerBoxBlock)(Blocks.RED_SHULKER_BOX)).getColor().getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_shulker_box_chest"));
-			info.addSlot(EquipmentSlot.LEGS, ((ShulkerBoxBlock)(Blocks.RED_SHULKER_BOX)).getColor().getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_shulker_box_legs"));
-			info.addSlot(EquipmentSlot.FEET, ((ShulkerBoxBlock)(Blocks.RED_SHULKER_BOX)).getColor().getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_shulker_box_feet"));
+			info.addSlot(EquipmentSlot.HEAD, ((ShulkerBoxBlock)(Blocks.RED_SHULKER_BOX)).getColor().getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_shulker_box_head"));
+			info.addSlot(EquipmentSlot.CHEST, ((ShulkerBoxBlock)(Blocks.RED_SHULKER_BOX)).getColor().getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_shulker_box_chest"));
+			info.addSlot(EquipmentSlot.LEGS, ((ShulkerBoxBlock)(Blocks.RED_SHULKER_BOX)).getColor().getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_shulker_box_legs"));
+			info.addSlot(EquipmentSlot.FEET, ((ShulkerBoxBlock)(Blocks.RED_SHULKER_BOX)).getColor().getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_shulker_box_feet"));
 			put(Blocks.RED_SHULKER_BOX, info); 
 			info = new TextureOverrideInfo();
-			info.addSlot(EquipmentSlot.HEAD, ((ShulkerBoxBlock)(Blocks.BLACK_SHULKER_BOX)).getColor().getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_shulker_box_head"));
-			info.addSlot(EquipmentSlot.CHEST, ((ShulkerBoxBlock)(Blocks.BLACK_SHULKER_BOX)).getColor().getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_shulker_box_chest"));
-			info.addSlot(EquipmentSlot.LEGS, ((ShulkerBoxBlock)(Blocks.BLACK_SHULKER_BOX)).getColor().getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_shulker_box_legs"));
-			info.addSlot(EquipmentSlot.FEET, ((ShulkerBoxBlock)(Blocks.BLACK_SHULKER_BOX)).getColor().getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_shulker_box_feet"));
+			info.addSlot(EquipmentSlot.HEAD, ((ShulkerBoxBlock)(Blocks.BLACK_SHULKER_BOX)).getColor().getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_shulker_box_head"));
+			info.addSlot(EquipmentSlot.CHEST, ((ShulkerBoxBlock)(Blocks.BLACK_SHULKER_BOX)).getColor().getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_shulker_box_chest"));
+			info.addSlot(EquipmentSlot.LEGS, ((ShulkerBoxBlock)(Blocks.BLACK_SHULKER_BOX)).getColor().getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_shulker_box_legs"));
+			info.addSlot(EquipmentSlot.FEET, ((ShulkerBoxBlock)(Blocks.BLACK_SHULKER_BOX)).getColor().getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_shulker_box_feet"));
 			put(Blocks.BLACK_SHULKER_BOX, info);
 			info = new TextureOverrideInfo();
-			info.addSlot(EquipmentSlot.HEAD, -1, new ResourceLocation(BlockArmor.MODID, "items/overrides/white_bed_head"));
-			info.addSlot(EquipmentSlot.CHEST, DyeColor.WHITE.getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_bed_chest"));
-			info.addSlot(EquipmentSlot.LEGS, DyeColor.WHITE.getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_bed_legs"));
-			info.addSlot(EquipmentSlot.FEET, -1, new ResourceLocation(BlockArmor.MODID, "items/overrides/white_bed_feet"));
+			info.addSlot(EquipmentSlot.HEAD, -1, Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_bed_head"));
+			info.addSlot(EquipmentSlot.CHEST, DyeColor.WHITE.getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_bed_chest"));
+			info.addSlot(EquipmentSlot.LEGS, DyeColor.WHITE.getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_bed_legs"));
+			info.addSlot(EquipmentSlot.FEET, -1, Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_bed_feet"));
 			put(Blocks.WHITE_BED, info); 
 			info = new TextureOverrideInfo();
-			info.addSlot(EquipmentSlot.HEAD, -1, new ResourceLocation(BlockArmor.MODID, "items/overrides/white_bed_head"));
-			info.addSlot(EquipmentSlot.CHEST, DyeColor.ORANGE.getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_bed_chest"));
-			info.addSlot(EquipmentSlot.LEGS, DyeColor.ORANGE.getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_bed_legs"));
-			info.addSlot(EquipmentSlot.FEET, -1, new ResourceLocation(BlockArmor.MODID, "items/overrides/white_bed_feet"));
+			info.addSlot(EquipmentSlot.HEAD, -1, Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_bed_head"));
+			info.addSlot(EquipmentSlot.CHEST, DyeColor.ORANGE.getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_bed_chest"));
+			info.addSlot(EquipmentSlot.LEGS, DyeColor.ORANGE.getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_bed_legs"));
+			info.addSlot(EquipmentSlot.FEET, -1, Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_bed_feet"));
 			put(Blocks.ORANGE_BED, info); 
 			info = new TextureOverrideInfo();
-			info.addSlot(EquipmentSlot.HEAD, -1, new ResourceLocation(BlockArmor.MODID, "items/overrides/white_bed_head"));
-			info.addSlot(EquipmentSlot.CHEST, DyeColor.MAGENTA.getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_bed_chest"));
-			info.addSlot(EquipmentSlot.LEGS, DyeColor.MAGENTA.getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_bed_legs"));
-			info.addSlot(EquipmentSlot.FEET, -1, new ResourceLocation(BlockArmor.MODID, "items/overrides/white_bed_feet"));
+			info.addSlot(EquipmentSlot.HEAD, -1, Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_bed_head"));
+			info.addSlot(EquipmentSlot.CHEST, DyeColor.MAGENTA.getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_bed_chest"));
+			info.addSlot(EquipmentSlot.LEGS, DyeColor.MAGENTA.getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_bed_legs"));
+			info.addSlot(EquipmentSlot.FEET, -1, Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_bed_feet"));
 			put(Blocks.MAGENTA_BED, info); 
 			info = new TextureOverrideInfo();
-			info.addSlot(EquipmentSlot.HEAD, -1, new ResourceLocation(BlockArmor.MODID, "items/overrides/white_bed_head"));
-			info.addSlot(EquipmentSlot.CHEST, DyeColor.LIGHT_BLUE.getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_bed_chest"));
-			info.addSlot(EquipmentSlot.LEGS, DyeColor.LIGHT_BLUE.getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_bed_legs"));
-			info.addSlot(EquipmentSlot.FEET, -1, new ResourceLocation(BlockArmor.MODID, "items/overrides/white_bed_feet"));
+			info.addSlot(EquipmentSlot.HEAD, -1, Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_bed_head"));
+			info.addSlot(EquipmentSlot.CHEST, DyeColor.LIGHT_BLUE.getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_bed_chest"));
+			info.addSlot(EquipmentSlot.LEGS, DyeColor.LIGHT_BLUE.getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_bed_legs"));
+			info.addSlot(EquipmentSlot.FEET, -1, Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_bed_feet"));
 			put(Blocks.LIGHT_BLUE_BED, info); 
 			info = new TextureOverrideInfo();
-			info.addSlot(EquipmentSlot.HEAD, -1, new ResourceLocation(BlockArmor.MODID, "items/overrides/white_bed_head"));
-			info.addSlot(EquipmentSlot.CHEST, DyeColor.YELLOW.getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_bed_chest"));
-			info.addSlot(EquipmentSlot.LEGS, DyeColor.YELLOW.getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_bed_legs"));
-			info.addSlot(EquipmentSlot.FEET, -1, new ResourceLocation(BlockArmor.MODID, "items/overrides/white_bed_feet"));
+			info.addSlot(EquipmentSlot.HEAD, -1, Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_bed_head"));
+			info.addSlot(EquipmentSlot.CHEST, DyeColor.YELLOW.getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_bed_chest"));
+			info.addSlot(EquipmentSlot.LEGS, DyeColor.YELLOW.getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_bed_legs"));
+			info.addSlot(EquipmentSlot.FEET, -1, Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_bed_feet"));
 			put(Blocks.YELLOW_BED, info); 
 			info = new TextureOverrideInfo();
-			info.addSlot(EquipmentSlot.HEAD, -1, new ResourceLocation(BlockArmor.MODID, "items/overrides/white_bed_head"));
-			info.addSlot(EquipmentSlot.CHEST, DyeColor.LIME.getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_bed_chest"));
-			info.addSlot(EquipmentSlot.LEGS, DyeColor.LIME.getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_bed_legs"));
-			info.addSlot(EquipmentSlot.FEET, -1, new ResourceLocation(BlockArmor.MODID, "items/overrides/white_bed_feet"));
+			info.addSlot(EquipmentSlot.HEAD, -1, Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_bed_head"));
+			info.addSlot(EquipmentSlot.CHEST, DyeColor.LIME.getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_bed_chest"));
+			info.addSlot(EquipmentSlot.LEGS, DyeColor.LIME.getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_bed_legs"));
+			info.addSlot(EquipmentSlot.FEET, -1, Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_bed_feet"));
 			put(Blocks.LIME_BED, info); 
 			info = new TextureOverrideInfo();
-			info.addSlot(EquipmentSlot.HEAD, -1, new ResourceLocation(BlockArmor.MODID, "items/overrides/white_bed_head"));
-			info.addSlot(EquipmentSlot.CHEST, DyeColor.PINK.getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_bed_chest"));
-			info.addSlot(EquipmentSlot.LEGS, DyeColor.PINK.getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_bed_legs"));
-			info.addSlot(EquipmentSlot.FEET, -1, new ResourceLocation(BlockArmor.MODID, "items/overrides/white_bed_feet"));
+			info.addSlot(EquipmentSlot.HEAD, -1, Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_bed_head"));
+			info.addSlot(EquipmentSlot.CHEST, DyeColor.PINK.getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_bed_chest"));
+			info.addSlot(EquipmentSlot.LEGS, DyeColor.PINK.getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_bed_legs"));
+			info.addSlot(EquipmentSlot.FEET, -1, Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_bed_feet"));
 			put(Blocks.PINK_BED, info); 
 			info = new TextureOverrideInfo();
-			info.addSlot(EquipmentSlot.HEAD, -1, new ResourceLocation(BlockArmor.MODID, "items/overrides/white_bed_head"));
-			info.addSlot(EquipmentSlot.CHEST, DyeColor.GRAY.getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_bed_chest"));
-			info.addSlot(EquipmentSlot.LEGS, DyeColor.GRAY.getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_bed_legs"));
-			info.addSlot(EquipmentSlot.FEET, -1, new ResourceLocation(BlockArmor.MODID, "items/overrides/white_bed_feet"));
+			info.addSlot(EquipmentSlot.HEAD, -1, Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_bed_head"));
+			info.addSlot(EquipmentSlot.CHEST, DyeColor.GRAY.getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_bed_chest"));
+			info.addSlot(EquipmentSlot.LEGS, DyeColor.GRAY.getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_bed_legs"));
+			info.addSlot(EquipmentSlot.FEET, -1, Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_bed_feet"));
 			put(Blocks.GRAY_BED, info); 
 			info = new TextureOverrideInfo();
-			info.addSlot(EquipmentSlot.HEAD, -1, new ResourceLocation(BlockArmor.MODID, "items/overrides/white_bed_head"));
-			info.addSlot(EquipmentSlot.CHEST, DyeColor.LIGHT_GRAY.getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_bed_chest"));
-			info.addSlot(EquipmentSlot.LEGS, DyeColor.LIGHT_GRAY.getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_bed_legs"));
-			info.addSlot(EquipmentSlot.FEET, -1, new ResourceLocation(BlockArmor.MODID, "items/overrides/white_bed_feet"));
+			info.addSlot(EquipmentSlot.HEAD, -1, Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_bed_head"));
+			info.addSlot(EquipmentSlot.CHEST, DyeColor.LIGHT_GRAY.getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_bed_chest"));
+			info.addSlot(EquipmentSlot.LEGS, DyeColor.LIGHT_GRAY.getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_bed_legs"));
+			info.addSlot(EquipmentSlot.FEET, -1, Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_bed_feet"));
 			put(Blocks.LIGHT_GRAY_BED, info); 
 			info = new TextureOverrideInfo();
-			info.addSlot(EquipmentSlot.HEAD, -1, new ResourceLocation(BlockArmor.MODID, "items/overrides/white_bed_head"));
-			info.addSlot(EquipmentSlot.CHEST, DyeColor.CYAN.getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_bed_chest"));
-			info.addSlot(EquipmentSlot.LEGS, DyeColor.CYAN.getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_bed_legs"));
-			info.addSlot(EquipmentSlot.FEET, -1, new ResourceLocation(BlockArmor.MODID, "items/overrides/white_bed_feet"));
+			info.addSlot(EquipmentSlot.HEAD, -1, Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_bed_head"));
+			info.addSlot(EquipmentSlot.CHEST, DyeColor.CYAN.getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_bed_chest"));
+			info.addSlot(EquipmentSlot.LEGS, DyeColor.CYAN.getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_bed_legs"));
+			info.addSlot(EquipmentSlot.FEET, -1, Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_bed_feet"));
 			put(Blocks.CYAN_BED, info); 
 			info = new TextureOverrideInfo();
-			info.addSlot(EquipmentSlot.HEAD, -1, new ResourceLocation(BlockArmor.MODID, "items/overrides/white_bed_head"));
-			info.addSlot(EquipmentSlot.CHEST, DyeColor.PURPLE.getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_bed_chest"));
-			info.addSlot(EquipmentSlot.LEGS, DyeColor.PURPLE.getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_bed_legs"));
-			info.addSlot(EquipmentSlot.FEET, -1, new ResourceLocation(BlockArmor.MODID, "items/overrides/white_bed_feet"));
+			info.addSlot(EquipmentSlot.HEAD, -1, Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_bed_head"));
+			info.addSlot(EquipmentSlot.CHEST, DyeColor.PURPLE.getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_bed_chest"));
+			info.addSlot(EquipmentSlot.LEGS, DyeColor.PURPLE.getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_bed_legs"));
+			info.addSlot(EquipmentSlot.FEET, -1, Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_bed_feet"));
 			put(Blocks.PURPLE_BED, info); 
 			info = new TextureOverrideInfo();
-			info.addSlot(EquipmentSlot.HEAD, -1, new ResourceLocation(BlockArmor.MODID, "items/overrides/white_bed_head"));
-			info.addSlot(EquipmentSlot.CHEST, DyeColor.BLUE.getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_bed_chest"));
-			info.addSlot(EquipmentSlot.LEGS, DyeColor.BLUE.getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_bed_legs"));
-			info.addSlot(EquipmentSlot.FEET, -1, new ResourceLocation(BlockArmor.MODID, "items/overrides/white_bed_feet"));
+			info.addSlot(EquipmentSlot.HEAD, -1, Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_bed_head"));
+			info.addSlot(EquipmentSlot.CHEST, DyeColor.BLUE.getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_bed_chest"));
+			info.addSlot(EquipmentSlot.LEGS, DyeColor.BLUE.getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_bed_legs"));
+			info.addSlot(EquipmentSlot.FEET, -1, Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_bed_feet"));
 			put(Blocks.BLUE_BED, info); 
 			info = new TextureOverrideInfo();
-			info.addSlot(EquipmentSlot.HEAD, -1, new ResourceLocation(BlockArmor.MODID, "items/overrides/white_bed_head"));
-			info.addSlot(EquipmentSlot.CHEST, DyeColor.BROWN.getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_bed_chest"));
-			info.addSlot(EquipmentSlot.LEGS, DyeColor.BROWN.getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_bed_legs"));
-			info.addSlot(EquipmentSlot.FEET, -1, new ResourceLocation(BlockArmor.MODID, "items/overrides/white_bed_feet"));
+			info.addSlot(EquipmentSlot.HEAD, -1, Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_bed_head"));
+			info.addSlot(EquipmentSlot.CHEST, DyeColor.BROWN.getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_bed_chest"));
+			info.addSlot(EquipmentSlot.LEGS, DyeColor.BROWN.getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_bed_legs"));
+			info.addSlot(EquipmentSlot.FEET, -1, Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_bed_feet"));
 			put(Blocks.BROWN_BED, info); 
 			info = new TextureOverrideInfo();
-			info.addSlot(EquipmentSlot.HEAD, -1, new ResourceLocation(BlockArmor.MODID, "items/overrides/white_bed_head"));
-			info.addSlot(EquipmentSlot.CHEST, DyeColor.GREEN.getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_bed_chest"));
-			info.addSlot(EquipmentSlot.LEGS, DyeColor.GREEN.getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_bed_legs"));
-			info.addSlot(EquipmentSlot.FEET, -1, new ResourceLocation(BlockArmor.MODID, "items/overrides/white_bed_feet"));
+			info.addSlot(EquipmentSlot.HEAD, -1, Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_bed_head"));
+			info.addSlot(EquipmentSlot.CHEST, DyeColor.GREEN.getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_bed_chest"));
+			info.addSlot(EquipmentSlot.LEGS, DyeColor.GREEN.getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_bed_legs"));
+			info.addSlot(EquipmentSlot.FEET, -1, Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_bed_feet"));
 			put(Blocks.GREEN_BED, info); 
 			info = new TextureOverrideInfo();
-			info.addSlot(EquipmentSlot.HEAD, -1, new ResourceLocation(BlockArmor.MODID, "items/overrides/white_bed_head"));
-			info.addSlot(EquipmentSlot.CHEST, DyeColor.RED.getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_bed_chest"));
-			info.addSlot(EquipmentSlot.LEGS, DyeColor.RED.getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_bed_legs"));
-			info.addSlot(EquipmentSlot.FEET, -1, new ResourceLocation(BlockArmor.MODID, "items/overrides/white_bed_feet"));
+			info.addSlot(EquipmentSlot.HEAD, -1, Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_bed_head"));
+			info.addSlot(EquipmentSlot.CHEST, DyeColor.RED.getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_bed_chest"));
+			info.addSlot(EquipmentSlot.LEGS, DyeColor.RED.getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_bed_legs"));
+			info.addSlot(EquipmentSlot.FEET, -1, Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_bed_feet"));
 			put(Blocks.RED_BED, info); 
 			info = new TextureOverrideInfo();
-			info.addSlot(EquipmentSlot.HEAD, -1, new ResourceLocation(BlockArmor.MODID, "items/overrides/white_bed_head"));
-			info.addSlot(EquipmentSlot.CHEST, DyeColor.BLACK.getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_bed_chest"));
-			info.addSlot(EquipmentSlot.LEGS, DyeColor.BLACK.getFireworkColor(), new ResourceLocation(BlockArmor.MODID, "items/overrides/white_bed_legs"));
-			info.addSlot(EquipmentSlot.FEET, -1, new ResourceLocation(BlockArmor.MODID, "items/overrides/white_bed_feet"));
+			info.addSlot(EquipmentSlot.HEAD, -1, Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_bed_head"));
+			info.addSlot(EquipmentSlot.CHEST, DyeColor.BLACK.getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_bed_chest"));
+			info.addSlot(EquipmentSlot.LEGS, DyeColor.BLACK.getFireworkColor(), Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_bed_legs"));
+			info.addSlot(EquipmentSlot.FEET, -1, Identifier.fromNamespaceAndPath(BlockArmor.MODID, "items/overrides/white_bed_feet"));
 			put(Blocks.BLACK_BED, info);
 		}};
 	}
@@ -366,7 +365,7 @@ public class ArmorSet {
 		this.block = ((BlockItem) item).getBlock();
 		this.registryName = ArmorSet.getItemRegistryName(this.item);
 		try {
-			ResourceLocation loc = net.minecraft.core.Registry.ITEM.getKey(this.item);
+			Identifier loc = net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(this.item);
 			this.modid = loc.getNamespace().toLowerCase();
 			if (!this.modid.equals("minecraft"))
 				isFromModdedBlock = true;
@@ -405,7 +404,7 @@ public class ArmorSet {
 	public void createMaterial() {
 		int[] reductionAmounts = new int[] {(int) (armorDamageReduction), (int) (armorDamageReduction*2f), (int) (armorDamageReduction*2.5f), (int) (armorDamageReduction*1.45f)};
 		this.material = new BlockArmorMaterial(getItemStackDisplayName(this.item, null)+" Material", 
-				armorDurability, reductionAmounts, armorEnchantability, SoundEvents.ARMOR_EQUIP_GENERIC, armorToughness,
+				armorDurability, reductionAmounts, armorEnchantability, SoundEvents.ARMOR_EQUIP_GENERIC.value(), armorToughness,
 				armorKnockbackResistance, () -> {
 					return Ingredient.of(new ItemLike[]{this.item});
 				});
@@ -507,13 +506,13 @@ public class ArmorSet {
 		if (item instanceof BlockArmorItem)
 			item = ((BlockArmorItem)item).set.item;
 
-		return new TranslatableComponent(item.getDescriptionId()).getString();
+		return Component.translatable(item.getDescriptionId()).getString();
 	}
 
 	/**Used to uniformly create registry name*/
 	public static String getItemRegistryName(Item item) {
 		try {
-			String registryName = net.minecraft.core.Registry.ITEM.getKey(item).getPath().toLowerCase().replace(" ", "_");
+			String registryName = net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(item).getPath().toLowerCase().replace(" ", "_");
 			return registryName;
 		} 
 		catch (Exception e) {
@@ -538,18 +537,18 @@ public class ArmorSet {
 		if (slot != null)
 			switch (slot) {
 			case HEAD:
-				return new TranslatableComponent("item.blockarmor.helmet", name);
+				return Component.translatable("item.blockarmor.helmet", name);
 			case CHEST:
-				return new TranslatableComponent("item.blockarmor.chestplate", name);
+				return Component.translatable("item.blockarmor.chestplate", name);
 			case LEGS:
-				return new TranslatableComponent("item.blockarmor.leggings", name);
+				return Component.translatable("item.blockarmor.leggings", name);
 			case FEET:
-				return new TranslatableComponent("item.blockarmor.boots", name);
+				return Component.translatable("item.blockarmor.boots", name);
 			default:
 				break;
 			}
 
-		return new TextComponent(name);
+		return Component.literal(name);
 	}
 
 	/**Returns first piece of armor of the entity's worn set, or null*/
@@ -575,8 +574,8 @@ public class ArmorSet {
 
 	/**Returns the active set effects of the armor that the entity is wearing*/
 	public static HashSet<SetEffect> getWornSetEffects(LivingEntity entity) {
-		return entity != null && getPlayerSetEffects(entity.level.isClientSide).containsKey(entity.getUUID()) ?
-				getPlayerSetEffects(entity.level.isClientSide).get(entity.getUUID()) : Sets.newHashSet();
+		return entity != null && getPlayerSetEffects(entity.level().isClientSide()).containsKey(entity.getUUID()) ?
+				getPlayerSetEffects(entity.level().isClientSide()).get(entity.getUUID()) : Sets.newHashSet();
 	}
 
 	/**Does this entity have this worn set effect type active*/
@@ -614,7 +613,7 @@ public class ArmorSet {
 			// manually added blocks (only vanilla cuz we're overriding the textures)
 			if ((block instanceof ShulkerBoxBlock ||
 					block instanceof BedBlock) && 
-					net.minecraft.core.Registry.BLOCK.getKey(block).getNamespace().equals("minecraft")) {
+					net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(block).getNamespace().equals("minecraft")) {
 				//BlockArmor.LOGGER.debug("Valid "+itemIn.toString()+": manual");
 				return true;
 			}
@@ -624,8 +623,8 @@ public class ArmorSet {
 					return true;
 				}
 			String displayName = getNormalDisplayName(itemIn);
-			String registryName = net.minecraft.core.Registry.ITEM.getKey(item).getPath();
-			String modid = net.minecraft.core.Registry.ITEM.getKey(item).getNamespace();
+			String registryName = net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(item).getPath();
+			String modid = net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(item).getNamespace();
 			// bad modded item, ore/ingot, or unnamed
 			if (modid.contains("one_point_twelve_concrete") ||
 					modid.contains("railcraft") ||
@@ -641,13 +640,13 @@ public class ArmorSet {
 			// bad blocks
 			if (block instanceof LiquidBlock || 
 					block instanceof BaseEntityBlock || 
-					block instanceof OreBlock || 
+					net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(block).getPath().contains("ore") || 
 					block instanceof CropBlock || 
 					block instanceof BushBlock ||
 					block == Blocks.BARRIER || 
 					block instanceof SlabBlock || 
 					block instanceof InfestedBlock ||
-					block.getRenderShape(block.defaultBlockState()) != RenderShape.MODEL ||
+					block.defaultBlockState().getRenderShape() != RenderShape.MODEL ||
 					block == Blocks.IRON_BLOCK || 
 					block == Blocks.GOLD_BLOCK || 
 					block == Blocks.DIAMOND_BLOCK ||
@@ -658,7 +657,7 @@ public class ArmorSet {
 				return false;
 			}
 			// bad modded items
-			registryName = net.minecraft.core.Registry.BLOCK.getKey(block).toString();
+			registryName = net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(block).toString();
 			if (registryName.equalsIgnoreCase("evilcraft:darkBlock") || 
 					registryName.equalsIgnoreCase("evilcraft:obscuredGlass") ||
 					registryName.equalsIgnoreCase("evilcraft:hardenedBlood") ||
@@ -707,7 +706,6 @@ public class ArmorSet {
 		for (BlockArmorItem armor : armors) {
 			if (armor != null) {
 				CreativeModeTab tab = isFromModdedBlock ? BlockArmorCreativeTab.moddedTab : BlockArmorCreativeTab.vanillaTab;
-				armor.group = tab;
 				java.util.List<ItemStack> stacks = isFromModdedBlock ? BlockArmorCreativeTab.moddedStacks : BlockArmorCreativeTab.vanillaStacks;
 				if (stacks.stream().noneMatch(stack -> stack.getItem() == armor)) stacks.add(new ItemStack(armor));
 			}
@@ -726,7 +724,6 @@ public class ArmorSet {
 		BlockArmorItem[] armors = new BlockArmorItem[] {this.helmet, this.chestplate, this.leggings, this.boots};
 		for (BlockArmorItem armor : armors)
 			if (armor != null) {
-				armor.group = null;
 				BlockArmorCreativeTab.vanillaStacks.removeIf(stack -> stack.getItem() == armor);
 				BlockArmorCreativeTab.moddedStacks.removeIf(stack -> stack.getItem() == armor);
 			}
@@ -742,7 +739,7 @@ public class ArmorSet {
 
 	/**Call onStop for set effects on logout - only called serverside in SSP*/
 	public static void onLogout(Player player) {
-		HashMap<UUID, HashSet<SetEffect>> playerSetEffects = getPlayerSetEffects(player.level.isClientSide);
+		HashMap<UUID, HashSet<SetEffect>> playerSetEffects = getPlayerSetEffects(player.level().isClientSide());
 		if (playerSetEffects.containsKey(player.getUUID())) {
 			for (SetEffect effect : playerSetEffects.get(player.getUUID()))
 				effect.onStop(player);

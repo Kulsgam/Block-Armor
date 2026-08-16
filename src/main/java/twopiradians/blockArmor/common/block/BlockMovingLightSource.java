@@ -2,8 +2,12 @@ package twopiradians.blockArmor.common.block;
 
 
 import org.jetbrains.annotations.Nullable;
+import com.mojang.serialization.MapCodec;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
@@ -20,7 +24,6 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.IntegerProperty;
 import net.minecraft.world.level.block.state.properties.Property;
-import net.minecraft.world.level.material.Material;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
@@ -28,12 +31,17 @@ import twopiradians.blockArmor.common.tileentity.TileEntityMovingLightSource;
 
 /**Used for armor sets that produce light*/
 public class BlockMovingLightSource extends BaseEntityBlock {
+	public static final MapCodec<BlockMovingLightSource> CODEC = MapCodec.unit(BlockMovingLightSource::new);
 
 	public static final Property<Integer> LIGHT_LEVEL = IntegerProperty.create("light_level", 1, 15);
 
 	public BlockMovingLightSource() {
-		super(BlockBehaviour.Properties.of(Material.AIR).lightLevel((state) -> state.getValue(LIGHT_LEVEL).intValue()));
+		super(BlockBehaviour.Properties.of().setId(ResourceKey.create(Registries.BLOCK,
+				Identifier.fromNamespaceAndPath("blockarmor", "moving_light_source"))).noCollision().replaceable().lightLevel((state) -> state.getValue(LIGHT_LEVEL).intValue()));
 	}
+
+	@Override
+	protected MapCodec<? extends BaseEntityBlock> codec() { return CODEC; }
 
 	@Override
 	protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
@@ -69,7 +77,7 @@ public class BlockMovingLightSource extends BaseEntityBlock {
 	@Nullable
 	@Override
 	public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {
-		return level.isClientSide ? null : createTickerHelper(type, TileEntityMovingLightSource.type, TileEntityMovingLightSource::tick);
+		return level.isClientSide() ? null : createTickerHelper(type, TileEntityMovingLightSource.type, TileEntityMovingLightSource::tick);
 	}
 
 }

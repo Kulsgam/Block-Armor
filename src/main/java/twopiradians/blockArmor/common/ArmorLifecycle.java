@@ -14,7 +14,7 @@ public final class ArmorLifecycle {
         for (EquipmentSlot slot : ArmorSet.SLOTS) {
             ItemStack stack = player.getItemBySlot(slot);
             if (!stack.isEmpty() && stack.getItem() instanceof BlockArmorItem armor)
-                armor.tickEquipped(stack, player.level, player);
+                armor.tickEquipped(stack, player.level(), player);
         }
     }
 }

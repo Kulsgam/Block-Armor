@@ -1,6 +1,9 @@
 
 # Minecraft
 minecraft
+!src/main/resources/assets/minecraft/
+!src/main/resources/assets/minecraft/atlases/
+!src/main/resources/assets/minecraft/atlases/blocks.json
 
 # eclipse
 bin

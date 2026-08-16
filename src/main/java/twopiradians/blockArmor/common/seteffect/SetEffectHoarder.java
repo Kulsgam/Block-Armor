@@ -4,23 +4,25 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.WeakHashMap;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.NonNullList;
-import net.minecraft.core.Registry;
-import net.minecraft.resources.ResourceLocation;
-import net.fabricmc.fabric.api.screenhandler.v1.ScreenHandlerRegistry;
+import net.minecraft.resources.Identifier;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.NbtOps;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.world.item.component.CustomData;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.network.chat.TextComponent;
-import net.minecraft.network.chat.TranslatableComponent;
-import net.minecraft.network.protocol.game.ClientboundCustomSoundPacket;
+
+
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
@@ -53,6 +55,8 @@ public class SetEffectHoarder extends SetEffect {
 
 	/**Map of Hoarder item to items it stores so nbt only has to update once per tick*/
 	private static HashMap<ItemStack, ItemStack[]> dirtyItems = Maps.newHashMap();
+	/** 26.1 removed ItemStack#getEntityRepresentation; retain the last server owner. */
+	private static final Map<ItemStack, Entity> STACK_OWNERS = java.util.Collections.synchronizedMap(new WeakHashMap<>());
 
 	public static MenuType<HoarderContainer> containerType_9x1;
 	public static MenuType<HoarderContainer> containerType_9x2;
@@ -82,10 +86,10 @@ public class SetEffectHoarder extends SetEffect {
 	public void onArmorTick(Level world, Player player, ItemStack stack) {
 		super.onArmorTick(world, player, stack);
 
-		if (!world.isClientSide && BlockArmor.key.isKeyDown(player) &&
+		if (!world.isClientSide() && BlockArmor.key.isKeyDown(player) &&
 				ArmorSet.getFirstSetItem(player, this) == stack &&
-				!player.getCooldowns().isOnCooldown(stack.getItem())) {
-			player.level.playSound(null, player.blockPosition(), SetEffect.HOARDER.getSoundEvent(player, true), SoundSource.PLAYERS, .6F, 1F);
+				!player.getCooldowns().isOnCooldown(stack)) {
+			player.level().playSound(null, player.blockPosition(), SetEffect.HOARDER.getSoundEvent(player, true), SoundSource.PLAYERS, .6F, 1F);
 			player.openMenu(new HoarderProvider());
 			this.damageArmor(player, 1, false); 
 			this.setCooldown(player, 20);
@@ -106,7 +110,7 @@ public class SetEffectHoarder extends SetEffect {
 		tooltip = super.addInformation(stack, isShiftDown, player, tooltip, flagIn);
 
 		// add stored items
-		if (stack.hasTag() && stack.getTag().contains(BlockArmor.MODID+":hoarderItems")) {
+		if (stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag().contains(BlockArmor.MODID+":hoarderItems")) {
 			NonNullList<ItemStack> storedItems = getStoredItems(stack);
 			ArrayList<ItemStack> nonEmptyItems = Lists.newArrayList();
 			for (ItemStack storedItem : storedItems)
@@ -114,14 +118,14 @@ public class SetEffectHoarder extends SetEffect {
 					nonEmptyItems.add(storedItem);
 			for (int i=0; i<4 && i<nonEmptyItems.size(); ++i) {
 				ItemStack storedItem = nonEmptyItems.get(i);
-				MutableComponent comp = new TextComponent("  - ")
+				MutableComponent comp = Component.literal("  - ")
 						.append(storedItem.getHoverName().copy().withStyle(this.color));
 				comp.append(" x").append(String.valueOf(storedItem.getCount()));
 				tooltip.add(comp);
 			}
 			if (nonEmptyItems.size() > 4)
-				tooltip.add((new TextComponent("  ")
-						.append(new TranslatableComponent("container.shulkerBox.more", nonEmptyItems.size()-4)).withStyle(ChatFormatting.ITALIC, this.color)));
+				tooltip.add((Component.literal("  ")
+						.append(Component.translatable("container.shulkerBox.more", nonEmptyItems.size()-4)).withStyle(ChatFormatting.ITALIC, this.color)));
 		}
 
 		return tooltip;
@@ -153,20 +157,29 @@ public class SetEffectHoarder extends SetEffect {
 
 	/**Called when an item with Hoarder is broken*/
 	public void onBreak(ItemStack stack) {
-		// get player, item frame, or item entity with this item
-		Entity entity = stack.getEntityRepresentation();
+		onBreak(stack, STACK_OWNERS.get(stack));
+	}
+
+	public static void trackOwner(ItemStack stack, Entity entity) {
+		if (stack != null && entity != null && !entity.level().isClientSide()) STACK_OWNERS.put(stack, entity);
+	}
+
+	/** Drops stored contents when the owning dropped item entity is available. */
+	public void onBreak(ItemStack stack, Entity entity) {
 
 		// spawn stored items
-		if (entity != null && !entity.level.isClientSide) {
+		if (entity != null && !entity.level().isClientSide()) {
 			NonNullList<ItemStack> storedItems = getStoredItems(stack);
 			if (!storedItems.isEmpty()) {
 				for (ItemStack storedItem : storedItems)
-					entity.spawnAtLocation(storedItem);
+					entity.spawnAtLocation((net.minecraft.server.level.ServerLevel) entity.level(), storedItem);
 				stack.setCount(0);
 				// if hoarder gui is open - close it (to prevent dupes)
+				if (entity instanceof ServerPlayer player && player.containerMenu instanceof HoarderContainer)
+					player.closeContainer();
 			}
 		}
-
+		STACK_OWNERS.remove(stack);
 	}
 
 	/**Get container type based on which/how many slots have Hoarder items*/
@@ -212,12 +225,12 @@ public class SetEffectHoarder extends SetEffect {
 	/**Get stacks stored in this Hoarder item*/
 	public static NonNullList<ItemStack> getStoredItems(ItemStack wornItem) {
 		NonNullList<ItemStack> stacks = NonNullList.withSize(SLOT_TO_SIZE.get(((BlockArmorItem)wornItem.getItem()).getSlot()), ItemStack.EMPTY);
-		if (wornItem != null && !wornItem.isEmpty() && wornItem.hasTag()) {
-			CompoundTag nbt = wornItem.getTag();
-			ListTag list = nbt.getList(BlockArmor.MODID+":hoarderItems", 10);
+		if (wornItem != null && !wornItem.isEmpty()) {
+			CompoundTag nbt = wornItem.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
+			ListTag list = nbt.getListOrEmpty(BlockArmor.MODID+":hoarderItems");
 			for (int i=0; i<list.size() && i<stacks.size(); ++i) {
-				CompoundTag itemNbt = list.getCompound(i);
-				stacks.set(i, ItemStack.of(itemNbt));
+				CompoundTag itemNbt = list.getCompoundOrEmpty(i);
+				stacks.set(i, ItemStack.OPTIONAL_CODEC.parse(NbtOps.INSTANCE, itemNbt).result().orElse(ItemStack.EMPTY));
 			}
 		}
 		return stacks;
@@ -226,15 +239,15 @@ public class SetEffectHoarder extends SetEffect {
 	/**Set stacks stored in this Hoarder item*/
 	public static void setStoredItems(ItemStack wornItem, ItemStack[] stacks) {
 		if (wornItem != null) {
-			CompoundTag nbt = wornItem.hasTag() ? wornItem.getTag() : new CompoundTag();
+			CompoundTag nbt = wornItem.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
 			ListTag list = new ListTag();
 			for (int i=0; i<stacks.length; ++i)
 				if (stacks[i].isEmpty())
 					list.add(i, new CompoundTag());
 				else
-					list.add(i, stacks[i].save(new CompoundTag()));
+					ItemStack.OPTIONAL_CODEC.encodeStart(NbtOps.INSTANCE, stacks[i]).result().ifPresent(list::add);
 			nbt.put(BlockArmor.MODID+":hoarderItems", list);
-			wornItem.setTag(nbt);
+			CustomData.set(DataComponents.CUSTOM_DATA, wornItem, nbt);
 		}
 	}
 
@@ -247,7 +260,7 @@ public class SetEffectHoarder extends SetEffect {
 
 		@Override
 		public Component getDisplayName() {
-			return new TextComponent("Hoarder Storage");
+			return Component.literal("Hoarder Storage");
 		}
 	}
 
@@ -295,8 +308,8 @@ public class SetEffectHoarder extends SetEffect {
 		public void removed(Player player) {
 			super.removed(player);
 
-			if (!player.level.isClientSide && player instanceof ServerPlayer)
-				player.level.playSound(null, player.blockPosition(), SetEffect.HOARDER.getSoundEvent(player, false), SoundSource.PLAYERS, .6F, 1F);
+			if (!player.level().isClientSide() && player instanceof ServerPlayer)
+				player.level().playSound(null, player.blockPosition(), SetEffect.HOARDER.getSoundEvent(player, false), SoundSource.PLAYERS, .6F, 1F);
 		}
 
 		@Override
@@ -325,15 +338,15 @@ public class SetEffectHoarder extends SetEffect {
 	}	
 
 	public static void registerContainers() {
-		containerType_9x1 = registerContainer("hoarder_container_9x1");
-		containerType_9x2 = registerContainer("hoarder_container_9x2");
-		containerType_9x3 = registerContainer("hoarder_container_9x3");
-		containerType_9x4 = registerContainer("hoarder_container_9x4");
-		containerType_9x5 = registerContainer("hoarder_container_9x5");
-		containerType_9x6 = registerContainer("hoarder_container_9x6");
-	}
-	private static MenuType<HoarderContainer> registerContainer(String id) {
-		return ScreenHandlerRegistry.registerSimple(new ResourceLocation(BlockArmor.MODID, id), HoarderContainer::new);
+		// Chest menus are data-driven in 26.1. Reusing the matching vanilla menu
+		// types preserves the server inventory while letting the vanilla client build
+		// its corresponding screen without a deprecated Fabric screen-handler API.
+		containerType_9x1 = (MenuType) MenuType.GENERIC_9x1;
+		containerType_9x2 = (MenuType) MenuType.GENERIC_9x2;
+		containerType_9x3 = (MenuType) MenuType.GENERIC_9x3;
+		containerType_9x4 = (MenuType) MenuType.GENERIC_9x4;
+		containerType_9x5 = (MenuType) MenuType.GENERIC_9x5;
+		containerType_9x6 = (MenuType) MenuType.GENERIC_9x6;
 	}
 
 }
