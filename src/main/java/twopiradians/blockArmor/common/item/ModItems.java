@@ -13,6 +13,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.core.component.DataComponentMap;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.world.item.enchantment.Enchantable;
+import net.minecraft.world.item.enchantment.ItemEnchantments;
 import net.minecraft.world.item.equipment.Equippable;
 import twopiradians.blockArmor.common.BlockArmor;
 import twopiradians.blockArmor.common.config.Config;
@@ -78,6 +79,11 @@ public final class ModItems {
                 .set(DataComponents.MAX_DAMAGE, armor.getConfiguredMaxDamage())
                 .set(DataComponents.ENCHANTABLE,
                         new Enchantable(Math.max(0, armor.getEnchantmentValue())))
+                // Anvils require the appropriate enchantment-storage component
+                // to exist before they will process an enchanted book. Generated
+                // armor binds this map directly during startup, so it must carry
+                // the empty component just like vanilla armor does.
+                .set(DataComponents.ENCHANTMENTS, ItemEnchantments.EMPTY)
                 // The working Fabric port owns equipped rendering completely.
                 // Declaring IRON here made vanilla's iron equipment model the
                 // fallback whenever our Fabric renderer was not selected.

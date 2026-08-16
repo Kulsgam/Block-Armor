@@ -10,6 +10,7 @@
     "ItemCooldownsAccessor",
     "CooldownInstanceAccessor",
     "EntityWaterStateAccessor",
+    "EnchantmentMixin",
     "EnchantmentHelperMixin",
     "LootTableMixin",
     "AbstractContainerMenuAccessor",
