@@ -23,10 +23,10 @@ public class SetEffectPrickly extends SetEffect {
 	protected SetEffectPrickly() {
 		super();
 		this.color = ChatFormatting.GREEN;
-		this.enchantments.add(new EnchantmentData(Enchantments.THORNS, (short) 1, EquipmentSlot.HEAD));
-		this.enchantments.add(new EnchantmentData(Enchantments.THORNS, (short) 1, EquipmentSlot.CHEST));
-		this.enchantments.add(new EnchantmentData(Enchantments.THORNS, (short) 1, EquipmentSlot.LEGS));
-		this.enchantments.add(new EnchantmentData(Enchantments.THORNS, (short) 1, EquipmentSlot.FEET));
+		this.enchantments.add(new EnchantmentData(Enchantments.THORNS, (short) 3, EquipmentSlot.HEAD));
+		this.enchantments.add(new EnchantmentData(Enchantments.THORNS, (short) 3, EquipmentSlot.CHEST));
+		this.enchantments.add(new EnchantmentData(Enchantments.THORNS, (short) 3, EquipmentSlot.LEGS));
+		this.enchantments.add(new EnchantmentData(Enchantments.THORNS, (short) 3, EquipmentSlot.FEET));
 	}
 
 	/**Only called when player wearing full, enabled set*/
