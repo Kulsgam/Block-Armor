@@ -4,6 +4,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AnvilMenu;
 import net.minecraft.world.inventory.DataSlot;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.Blocks;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -24,6 +25,14 @@ abstract class AnvilMenuMixin {
         ItemCombinerMenuAccessor menu = (ItemCombinerMenuAccessor) (Object) this;
         ItemStack first = menu.blockarmor$getInputSlots().getItem(0);
         ItemStack second = menu.blockarmor$getInputSlots().getItem(1);
+        if (blockarmor$isBedrockRecipe(first, second)) {
+            menu.blockarmor$getResultSlots().setItem(0, new ItemStack(Blocks.BEDROCK));
+            repairItemCountCost = 0;
+            cost.set(0);
+            ((AnvilMenu) (Object) this).broadcastChanges();
+            ci.cancel();
+            return;
+        }
         if (!CombinedArmorData.canCombine(first, second)) return;
         menu.blockarmor$getResultSlots().setItem(0, CombinedArmorData.combine(first, second, itemName));
         repairItemCountCost = 0;
@@ -35,7 +44,19 @@ abstract class AnvilMenuMixin {
     @Inject(method = "mayPickup", at = @At("HEAD"), cancellable = true)
     private void blockarmor$allowFreePickup(Player player, boolean hasStack, CallbackInfoReturnable<Boolean> cir) {
         ItemCombinerMenuAccessor menu = (ItemCombinerMenuAccessor) (Object) this;
+        if (blockarmor$isBedrockRecipe(menu.blockarmor$getInputSlots().getItem(0),
+                menu.blockarmor$getInputSlots().getItem(1))) {
+            cir.setReturnValue(true);
+            return;
+        }
         if (CombinedArmorData.canCombine(menu.blockarmor$getInputSlots().getItem(0), menu.blockarmor$getInputSlots().getItem(1))
                 && CombinedArmorData.isCombined(menu.blockarmor$getResultSlots().getItem(0))) cir.setReturnValue(true);
+    }
+
+    private static boolean blockarmor$isBedrockRecipe(ItemStack first, ItemStack second) {
+        return (first.is(net.minecraft.world.item.Items.OBSIDIAN)
+                && second.is(net.minecraft.world.item.Items.CRYING_OBSIDIAN))
+                || (first.is(net.minecraft.world.item.Items.CRYING_OBSIDIAN)
+                && second.is(net.minecraft.world.item.Items.OBSIDIAN));
     }
 }
