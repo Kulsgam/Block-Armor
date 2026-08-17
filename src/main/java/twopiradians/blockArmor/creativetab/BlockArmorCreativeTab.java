@@ -12,6 +12,7 @@ import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import twopiradians.blockArmor.common.item.ArmorSet;
+import twopiradians.blockArmor.common.item.ModItems;
 
 /** Content providers for the two generated tabs; registration occurs after item discovery. */
 public final class BlockArmorCreativeTab {
@@ -34,6 +35,8 @@ public final class BlockArmorCreativeTab {
     public static void initialize() {
         if (initialized) return;
         initialized = true;
+        if (ModItems.ARMOR_EFFECT_TUNER != null)
+            vanillaStacks.add(0, new ItemStack(ModItems.ARMOR_EFFECT_TUNER));
         // Search is built from registered CATEGORY tabs. Adding directly to the
         // SEARCH event is too late for its text index, so register the same two
         // generated tabs used by the working 1.18.1 Fabric port.

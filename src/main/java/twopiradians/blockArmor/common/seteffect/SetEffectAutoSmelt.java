@@ -28,17 +28,9 @@ import twopiradians.blockArmor.common.item.ArmorSet;
 
 /** AutoSmelt behaviour; LootTableMixin supplies loot context on Fabric. */
 public class SetEffectAutoSmelt extends SetEffect {
-    protected SetEffectAutoSmelt() { super(); color = ChatFormatting.DARK_RED; usesButton = true; }
+    protected SetEffectAutoSmelt() { super(); color = ChatFormatting.DARK_RED; }
     @Override public void onArmorTick(Level world, Player player, ItemStack stack) {
         super.onArmorTick(world, player, stack);
-        if (!world.isClientSide() && ArmorSet.getFirstSetItem(player, this) == stack && BlockArmor.key.isKeyDown(player)
-                && !player.getCooldowns().isOnCooldown(stack)) {
-			boolean disabled = !SetEffect.customBoolean(stack, "deactivated");
-			SetEffect.setCustomBoolean(stack, "deactivated", disabled);
-			player.sendSystemMessage(Component.translatable(ChatFormatting.GRAY + "" + ChatFormatting.ITALIC + "AutoSmelt set effect " +
-					(disabled ? ChatFormatting.RED + "disabled" : ChatFormatting.GREEN + "enabled")));
-            setCooldown(player, 10);
-        }
     }
     @Override protected boolean isValid(Block block) { return SetEffect.registryNameContains(block, "furnace", "fire", "flame", "smelt", "smoker", "coal") && !SetEffect.registryNameContains(block, "coral"); }
     @Nullable public static ItemStack smelt(ItemStack stack, Level world) {
@@ -62,7 +54,7 @@ public class SetEffectAutoSmelt extends SetEffect {
     public static List<ItemStack> transformLoot(List<ItemStack> generated, LivingEntity entity, @Nullable BlockState state,
             @Nullable ItemStack tool, @Nullable Vec3 origin, Level world) {
         ItemStack armor = ArmorSet.getFirstSetItem(entity, AUTOSMELT);
-		if (armor == null || SetEffect.customBoolean(armor, "deactivated")
+		if (armor == null
 				|| (tool != null && EnchantmentHelper.getItemEnchantmentLevel(
 						world.registryAccess().lookupOrThrow(Registries.ENCHANTMENT).getOrThrow(Enchantments.SILK_TOUCH), tool) > 0))
             return generated;

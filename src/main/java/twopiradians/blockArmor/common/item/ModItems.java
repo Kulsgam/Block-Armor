@@ -22,8 +22,24 @@ import twopiradians.blockArmor.common.seteffect.SetEffect;
 /** Registers the four armor items generated for every eligible loaded block. */
 public final class ModItems {
     public static final List<BlockArmorItem> allArmors = new ArrayList<>();
+    public static Item ARMOR_EFFECT_TUNER;
 
     private ModItems() {}
+
+    public static void registerUtilityItems() {
+        Identifier id = Identifier.fromNamespaceAndPath(BlockArmor.MODID, "armor_effect_tuner");
+        ARMOR_EFFECT_TUNER = Registry.register(BuiltInRegistries.ITEM, id,
+                new ArmorEffectTunerItem(new Item.Properties()
+                        .setId(net.minecraft.resources.ResourceKey.create(
+                                net.minecraft.core.registries.Registries.ITEM, id)).stacksTo(1)));
+        // Creative-tab population happens before the first component resource
+        // pass in 26.1, so utility stacks need the same eager binding as the
+        // runtime-generated armor items.
+        ARMOR_EFFECT_TUNER.builtInRegistryHolder().bindComponents(DataComponentMap.builder()
+                .set(DataComponents.MAX_STACK_SIZE, 1)
+                .set(DataComponents.ITEM_MODEL, id)
+                .build());
+    }
 
     public static void discoverGeneratedArmor() {
 		DefaultItemComponentEvents.MODIFY.register(context -> context.modify(

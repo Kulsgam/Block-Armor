@@ -90,7 +90,7 @@ public class BlockArmorItem extends Item {
         Multimap<Attribute, AttributeModifier> map = baseAttributes(requestedSlot);
         if (requestedSlot != slot) return map;
         map = CombinedArmorData.attributes(stack, requestedSlot, map);
-        for (SetEffect effect : CombinedArmorData.effects(stack)) map = effect.getAttributeModifiers(map, requestedSlot, stack);
+        for (SetEffect effect : CombinedArmorData.enabledEffects(stack)) map = effect.getAttributeModifiers(map, requestedSlot, stack);
         return map;
     }
 
@@ -125,7 +125,7 @@ public class BlockArmorItem extends Item {
         // This must also run after an effect was removed from the stack, so its
         // previously injected enchantments can be restored to their old levels.
         SetEffect.reconcileEnchantments(stack, world, entity);
-        for (SetEffect effect : CombinedArmorData.effects(stack)) effect.onUpdate(stack, world, entity, slot.getIndex(), false);
+        for (SetEffect effect : CombinedArmorData.enabledEffects(stack)) effect.onUpdate(stack, world, entity, slot.getIndex(), false);
     }
 
     public boolean tickDropped(ItemStack stack, ItemEntity entity) {
@@ -141,7 +141,7 @@ public class BlockArmorItem extends Item {
     public void tickEquipped(ItemStack stack, Level world, Player player) {
         if ((!set.isEnabled() || (CombinedArmorData.isDevSpawned(stack) && !CommandDev.DEVS.contains(player.getUUID())))
                 && player.getItemBySlot(slot) == stack) { player.setItemSlot(slot, ItemStack.EMPTY); return; }
-        for (SetEffect effect : CombinedArmorData.effects(stack)) if (ArmorSet.getWornSetEffects(player).contains(effect)) effect.onArmorTick(world, player, stack);
+        for (SetEffect effect : CombinedArmorData.enabledEffects(stack)) if (ArmorSet.getWornSetEffects(player).contains(effect)) effect.onArmorTick(world, player, stack);
     }
 
     public void setMaterial(BlockArmorMaterial material) {

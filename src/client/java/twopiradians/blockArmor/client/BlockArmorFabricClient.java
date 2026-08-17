@@ -10,6 +10,9 @@ import twopiradians.blockArmor.packet.SDevColorsPacket;
 import twopiradians.blockArmor.packet.SConfigSyncPacket;
 import twopiradians.blockArmor.packet.SSyncCooldownsPacket;
 import twopiradians.blockArmor.common.item.ArmorSet;
+import twopiradians.blockArmor.common.menu.ModMenuTypes;
+import twopiradians.blockArmor.client.gui.ArmorEffectTunerScreen;
+import net.minecraft.client.gui.screens.MenuScreens;
 
 public final class BlockArmorFabricClient implements ClientModInitializer {
     @Override
@@ -21,6 +24,7 @@ public final class BlockArmorFabricClient implements ClientModInitializer {
                 () -> net.minecraft.client.Minecraft.getInstance().player);
         KeyActivateSetEffect.register();
         BlockArmorModelProvider.register();
+        MenuScreens.register(ModMenuTypes.ARMOR_EFFECT_TUNER, ArmorEffectTunerScreen::new);
         BlockArmorItemRenderer.register();
         BlockArmorRenderer.register();
         BlockArmorResourceReload.register();

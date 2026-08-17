@@ -567,7 +567,7 @@ public class ArmorSet {
 			for (EquipmentSlot slot : SLOTS) {
 				ItemStack stack = entity.getItemBySlot(slot);
 				if (stack != null && stack.getItem() instanceof BlockArmorItem &&
-						CombinedArmorData.hasEffect(stack, effect))
+						CombinedArmorData.hasEffect(stack, effect) && CombinedArmorData.isEffectEnabled(stack, effect))
 					ret.add(stack);
 			}
 		return ret;
@@ -814,6 +814,7 @@ public class ArmorSet {
 					oldEffect.onStop(player);
 			// update set effects
 			playerSetEffects.put(player.getUUID(), newEffects);
+			SetEffect.syncAttributeModifiers(player, newEffects);
 			// Fabric does not expose Forge's LivingEquipmentChangeEvent. Keep the
 			// full-set NBT marker current after every calculated equipment state.
 			SetEffect.onEquipmentChange(player);
@@ -836,7 +837,7 @@ public class ArmorSet {
 				ItemStack stack = entity.getItemBySlot(slot);
 				if (stack != null && stack.getItem() instanceof BlockArmorItem) {
 					worn.add(stack);
-					for (SetEffect effect : CombinedArmorData.effects(stack)) {
+					for (SetEffect effect : CombinedArmorData.enabledEffects(stack)) {
 						if (effect.isEnabled()) {
 							int count = 1;
 							if (setCounts.containsKey(effect))
@@ -856,11 +857,11 @@ public class ArmorSet {
 			java.util.HashMap<Class<?>, SetEffect> qualifiedCombined = new java.util.HashMap<>();
 			for (ItemStack combined : worn) {
 				if (!CombinedArmorData.isCombined(combined)) continue;
-				for (SetEffect carried : CombinedArmorData.effects(combined)) {
+				for (SetEffect carried : CombinedArmorData.enabledEffects(combined)) {
 					if (!carried.isEnabled()) continue;
 					int matchingPieces = 0;
 					for (ItemStack candidate : worn) {
-						boolean matches = CombinedArmorData.effects(candidate).stream()
+						boolean matches = CombinedArmorData.enabledEffects(candidate).stream()
 								.anyMatch(effect -> effect.isEnabled() && effect.getClass() == carried.getClass());
 						if (matches) matchingPieces++;
 					}

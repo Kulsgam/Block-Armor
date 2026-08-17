@@ -27,7 +27,6 @@ public class SetEffectIlluminated extends SetEffect {
 		super();
 		this.lightLevel = Mth.clamp(lightLevel, 1, 15);
 		this.color = ChatFormatting.GOLD;
-		this.usesButton = true;
 	}
 
 	/**Extra objects needed for description*/
@@ -40,21 +39,10 @@ public class SetEffectIlluminated extends SetEffect {
 	public void onArmorTick(Level world, Player player, ItemStack stack) {
 		super.onArmorTick(world, player, stack);
 
-		// enable/disable
-		if (ArmorSet.getFirstSetItem(player, this) == stack &&
-				!world.isClientSide() && BlockArmor.key.isKeyDown(player) && !player.getCooldowns().isOnCooldown(stack)) {
-			boolean deactivated = !SetEffect.customBoolean(stack, "deactivated");
-			SetEffect.setCustomBoolean(stack, "deactivated", deactivated);
-			player.sendSystemMessage(Component.translatable(ChatFormatting.GRAY+""+ChatFormatting.ITALIC+"Illuminated set effect "
-					+ (deactivated ? ChatFormatting.RED+""+ChatFormatting.ITALIC+"disabled" : ChatFormatting.GREEN+""+ChatFormatting.ITALIC+"enabled")));
-			this.setCooldown(player, 10);
-		}
-
 		//set block at head level to BlockMovingLightSource
 		if (ArmorSet.getFirstSetItem(player, this) == stack &&
 				!world.isClientSide() && world.isEmptyBlock(player.blockPosition().above()) && 
-				world.getBrightness(LightLayer.BLOCK, player.blockPosition().above()) < lightLevel &&
-				!SetEffect.customBoolean(stack, "deactivated")) {
+				world.getBrightness(LightLayer.BLOCK, player.blockPosition().above()) < lightLevel) {
 			BlockPos pos = player.blockPosition().above();
 			BlockState state = ModBlocks.MOVING_LIGHT_SOURCE.defaultBlockState().setValue(BlockMovingLightSource.LIGHT_LEVEL, lightLevel);
 			world.setBlockAndUpdate(pos, state);

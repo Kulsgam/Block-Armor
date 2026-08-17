@@ -6,12 +6,15 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.LinkedHashSet;
+import java.util.Set;
 import net.minecraft.core.Registry;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.StringTag;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.EquipmentSlot;
@@ -32,6 +35,8 @@ public final class CombinedArmorData {
     private static final String RIGHT = "Right";
     private static final String MAX_DAMAGE = "MaxDamage";
     private static final String ENCHANTABILITY = "Enchantability";
+    private static final String DISABLED_EFFECTS = "BlockArmorDisabledEffects";
+    private static final String ACTIVE_EFFECTS = "BlockArmorActiveEffects";
     private CombinedArmorData() {}
 
     /** Transitional readers used by the 26.1 component migration. */
@@ -91,8 +96,15 @@ public final class CombinedArmorData {
         out.put(RIGHT, source(second, false));
         CustomData.update(DataComponents.CUSTOM_DATA, result, root -> {
             root.remove("wearingFullSet");
+            root.remove(ACTIVE_EFFECTS);
             root.put(KEY, out);
         });
+        Set<String> disabled = new LinkedHashSet<>(disabledEffectIds(first));
+        disabled.addAll(disabledEffectIds(second));
+        Set<String> resultEffects = effects(result).stream().map(CombinedArmorData::effectId)
+                .collect(java.util.stream.Collectors.toSet());
+        disabled.retainAll(resultEffects);
+        writeEffectIds(result, DISABLED_EFFECTS, disabled);
         mergeEnchantments(result, second);
         int firstRepairCost = first.getOrDefault(DataComponents.REPAIR_COST, 0);
         int secondRepairCost = second.getOrDefault(DataComponents.REPAIR_COST, 0);
@@ -129,6 +141,78 @@ public final class CombinedArmorData {
             return result;
         }
         return stack.getItem() instanceof BlockArmorItem armor ? armor.set.setEffects : List.of();
+    }
+
+    public static String effectId(SetEffect effect) {
+        return effect.name;
+    }
+
+    public static Set<String> disabledEffectIds(ItemStack stack) {
+        Set<String> result = readEffectIds(stack, DISABLED_EFFECTS);
+        // Older builds used one ambiguous flag for these two toggle effects.
+        if (stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag()
+                .getBooleanOr("deactivated", false)) {
+            for (SetEffect effect : effects(stack))
+                if (effect.name.equals(SetEffect.AUTOSMELT.name) || effect.name.equals(SetEffect.ILLUMINATED.name))
+                    result.add(effectId(effect));
+        }
+        return result;
+    }
+
+    public static boolean isEffectEnabled(ItemStack stack, SetEffect effect) {
+        return !disabledEffectIds(stack).contains(effectId(effect));
+    }
+
+    public static List<SetEffect> enabledEffects(ItemStack stack) {
+        Set<String> disabled = disabledEffectIds(stack);
+        return effects(stack).stream().filter(effect -> !disabled.contains(effectId(effect))).toList();
+    }
+
+    public static void setEffectEnabled(ItemStack stack, SetEffect effect, boolean enabled) {
+        Set<String> disabled = disabledEffectIds(stack);
+        if (enabled) disabled.remove(effectId(effect));
+        else disabled.add(effectId(effect));
+        writeEffectIds(stack, DISABLED_EFFECTS, disabled);
+        if (!enabled) {
+            Set<String> active = readEffectIds(stack, ACTIVE_EFFECTS);
+            active.remove(effectId(effect));
+            writeEffectIds(stack, ACTIVE_EFFECTS, active);
+        }
+        CustomData.update(DataComponents.CUSTOM_DATA, stack, data -> data.remove("deactivated"));
+    }
+
+    public static boolean isEffectActive(ItemStack stack, SetEffect effect) {
+        return readEffectIds(stack, ACTIVE_EFFECTS).contains(effectId(effect));
+    }
+
+    public static boolean setActiveEffects(ItemStack stack, java.util.Collection<SetEffect> effects) {
+        Set<String> next = effects.stream().map(CombinedArmorData::effectId)
+                .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
+        if (readEffectIds(stack, ACTIVE_EFFECTS).equals(next)) return false;
+        writeEffectIds(stack, ACTIVE_EFFECTS, next);
+        return true;
+    }
+
+    private static Set<String> readEffectIds(ItemStack stack, String key) {
+        Set<String> result = new LinkedHashSet<>();
+        ListTag list = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag().getListOrEmpty(key);
+        for (int index = 0; index < list.size(); index++) {
+            String id = list.getStringOr(index, "");
+            if (!id.isBlank()) result.add(id);
+        }
+        return result;
+    }
+
+    private static void writeEffectIds(ItemStack stack, String key, java.util.Collection<String> ids) {
+        CustomData.update(DataComponents.CUSTOM_DATA, stack, data -> {
+            if (ids.isEmpty()) {
+                data.remove(key);
+                return;
+            }
+            ListTag list = new ListTag();
+            ids.stream().sorted().forEach(id -> list.add(StringTag.valueOf(id)));
+            data.put(key, list);
+        });
     }
     public static boolean hasEffect(ItemStack stack, SetEffect effect) {
         return effects(stack).stream().anyMatch(candidate -> candidate.equals(effect));

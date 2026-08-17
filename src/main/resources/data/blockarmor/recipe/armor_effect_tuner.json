@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "A": "minecraft:amethyst_shard",
+    "C": "minecraft:compass",
+    "I": "minecraft:iron_ingot",
+    "R": "minecraft:redstone"
+  },
+  "pattern": [
+    " A ",
+    "RCR",
+    " I "
+  ],
+  "result": {
+    "id": "blockarmor:armor_effect_tuner"
+  }
+}

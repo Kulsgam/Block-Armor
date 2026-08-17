@@ -200,8 +200,9 @@ public class SetEffect {
         ArrayList<ItemStack> armor = new ArrayList<ItemStack>();
         for (EquipmentSlot slot : ArmorSet.SLOTS) {
             ItemStack stack = entity.getItemBySlot(slot);
-            if (stack != null && stack.getItem() instanceof BlockArmorItem &&
-                    twopiradians.blockArmor.common.item.CombinedArmorData.hasEffect(stack, this))
+			if (stack != null && stack.getItem() instanceof BlockArmorItem &&
+					twopiradians.blockArmor.common.item.CombinedArmorData.hasEffect(stack, this) &&
+					twopiradians.blockArmor.common.item.CombinedArmorData.isEffectEnabled(stack, this))
                 armor.add(stack);
         }
 
@@ -242,7 +243,8 @@ public class SetEffect {
 			for (EquipmentSlot slot : ArmorSet.SLOTS) {
 				ItemStack stack = player.getItemBySlot(slot);
 				if (stack != null && stack.getItem() instanceof BlockArmorItem && 
-						twopiradians.blockArmor.common.item.CombinedArmorData.hasEffect(stack, this))
+						twopiradians.blockArmor.common.item.CombinedArmorData.hasEffect(stack, this) &&
+						twopiradians.blockArmor.common.item.CombinedArmorData.isEffectEnabled(stack, this))
 					player.getCooldowns().addCooldown(stack, ticks);
 			}
 	}
@@ -277,7 +279,7 @@ public class SetEffect {
 		java.util.Map<ResourceKey<Enchantment>, Integer> wanted = new java.util.LinkedHashMap<>();
 		if (living.getItemBySlot(armor.getSlot()) == stack) {
 			java.util.Set<SetEffect> worn = ArmorSet.getWornSetEffects(living);
-			for (SetEffect effect : twopiradians.blockArmor.common.item.CombinedArmorData.effects(stack)) {
+			for (SetEffect effect : twopiradians.blockArmor.common.item.CombinedArmorData.enabledEffects(stack)) {
 				if (!effect.isEnabled() || !worn.contains(effect)) continue;
 				for (EnchantmentData enchantment : effect.enchantments)
 					if (enchantment.slot == armor.getSlot()) wanted.merge(enchantment.ench, (int) enchantment.level, Math::max);
@@ -338,23 +340,13 @@ public class SetEffect {
 			if (slot.getType() == Type.HUMANOID_ARMOR) {
 				ItemStack stack = entity.getItemBySlot(slot);
 				if (stack != null && stack.getItem() instanceof BlockArmorItem) {
-					boolean changed = false;
-					if (customBoolean(stack, "wearingFullSet")) {
-						setCustomBoolean(stack, "wearingFullSet", false);
-						changed = true;
-					}
-					for (SetEffect stackEffect : twopiradians.blockArmor.common.item.CombinedArmorData.effects(stack)) {
-						String key = activeKey(stackEffect);
-						boolean active = effects.contains(stackEffect);
-						if (customBoolean(stack, key) != active) {
-							setCustomBoolean(stack, key, active);
-							changed = true;
-						}
-					}
-					if (!changed) continue;
-
-					// Re-apply this exact equipment stack's modifiers around the
-					// per-effect state transition.
+					java.util.List<SetEffect> active = twopiradians.blockArmor.common.item.CombinedArmorData
+							.enabledEffects(stack).stream()
+							.filter(effect -> effects.contains(effect)
+									&& ArmorSet.getFirstSetItem(entity, effect) == stack)
+							.toList();
+					if (!twopiradians.blockArmor.common.item.CombinedArmorData.setActiveEffects(stack, active)) continue;
+					setCustomBoolean(stack, "wearingFullSet", !active.isEmpty());
 					// Re-equipping the stack makes the component-era equipment system
 					// rebuild its attribute modifiers after the set-state transition.
 					if (!entity.level().isClientSide()) entity.setItemSlot(slot, stack);
@@ -365,18 +357,34 @@ public class SetEffect {
 	/**Handles the attributes when wearing an armor set*/
 	public Multimap<Attribute, AttributeModifier> getAttributeModifiers(Multimap<Attribute, AttributeModifier> map,
 			EquipmentSlot slot, ItemStack stack) {
-
-		if (customBoolean(stack, activeKey(this))) {
-			for (Attribute attribute : this.attributes.keySet())
-				map.put(attribute, this.attributes.get(attribute));
-		}
-
 		return map;
 	}
 
-	private static String activeKey(SetEffect effect) {
-		return "BlockArmorActiveEffect_" + effect.getClass().getName().replace('.', '_') + "_"
-				+ Integer.toUnsignedString(effect.writeToString().hashCode());
+	/**
+	 * Set bonuses belong to the entity, not to an arbitrary armor slot. Keeping
+	 * them here prevents vanilla from deleting a shared modifier when one of
+	 * several qualifying pieces is removed.
+	 */
+	public static void syncAttributeModifiers(LivingEntity entity, java.util.Collection<SetEffect> activeEffects) {
+		if (entity.level().isClientSide()) return;
+		java.util.Map<Attribute, java.util.Map<Identifier, AttributeModifier>> wanted = new java.util.HashMap<>();
+		for (SetEffect effect : activeEffects)
+			for (java.util.Map.Entry<Attribute, AttributeModifier> entry : effect.attributes.entrySet())
+				wanted.computeIfAbsent(entry.getKey(), ignored -> new java.util.HashMap<>())
+						.put(entry.getValue().id(), entry.getValue());
+
+		java.util.Map<Attribute, java.util.Set<Identifier>> known = new java.util.HashMap<>();
+		for (SetEffect effect : SET_EFFECTS)
+			for (java.util.Map.Entry<Attribute, AttributeModifier> entry : effect.attributes.entrySet())
+				known.computeIfAbsent(entry.getKey(), ignored -> new java.util.HashSet<>()).add(entry.getValue().id());
+
+		for (java.util.Map.Entry<Attribute, java.util.Set<Identifier>> entry : known.entrySet()) {
+			var instance = entity.getAttribute(net.minecraft.core.registries.BuiltInRegistries.ATTRIBUTE.wrapAsHolder(entry.getKey()));
+			if (instance == null) continue;
+			java.util.Map<Identifier, AttributeModifier> desired = wanted.getOrDefault(entry.getKey(), java.util.Map.of());
+			for (Identifier id : entry.getValue()) if (!desired.containsKey(id)) instance.removeModifier(id);
+			for (AttributeModifier modifier : desired.values()) instance.addOrUpdateTransientModifier(modifier);
+		}
 	}
 
 	/**Set effect name and description if shifting*/
@@ -385,7 +393,8 @@ public class SetEffect {
 		// set effect name
 		MutableComponent name = Component.translatable("setEffect."+this.name.replaceAll(" ", "_").toLowerCase()+".name");
 		// bold if active
-		if (player != null && (ArmorSet.getWornSetEffects(player).contains(this) && 
+		boolean enabledOnStack = twopiradians.blockArmor.common.item.CombinedArmorData.isEffectEnabled(stack, this);
+		if (enabledOnStack && player != null && (ArmorSet.getWornSetEffects(player).contains(this) &&
 				player.getItemBySlot(((BlockArmorItem)stack.getItem()).getSlot()) == stack))
 			name.withStyle(ChatFormatting.BOLD);
 		comp.append(name);
@@ -402,6 +411,10 @@ public class SetEffect {
 			comp.withStyle(ChatFormatting.STRIKETHROUGH);
 		// color
 		comp.withStyle(color);
+		if (!enabledOnStack) {
+			comp.append(Component.translatable("item.blockarmor.tooltip.effect_disabled")
+					.withStyle(ChatFormatting.RED, ChatFormatting.STRIKETHROUGH));
+		}
 		tooltip.add(comp);
 
 		return tooltip;

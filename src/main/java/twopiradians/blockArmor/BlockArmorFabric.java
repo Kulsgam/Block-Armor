@@ -13,6 +13,7 @@ import twopiradians.blockArmor.common.block.ModBlocks;
 import twopiradians.blockArmor.common.config.Config;
 import twopiradians.blockArmor.common.item.ArmorSet;
 import twopiradians.blockArmor.common.item.ModItems;
+import twopiradians.blockArmor.common.menu.ModMenuTypes;
 import twopiradians.blockArmor.common.seteffect.SetEffect;
 import twopiradians.blockArmor.common.seteffect.SetEffectHoarder;
 import twopiradians.blockArmor.common.seteffect.SetEffectHealth_Boost;
@@ -26,8 +27,10 @@ public final class BlockArmorFabric implements ModInitializer {
     @Override
     public void onInitialize() {
         ModBlocks.register();
+        ModMenuTypes.initialize();
         ModTileEntities.register();
         SetEffectHoarder.registerContainers();
+        ModItems.registerUtilityItems();
         ModItems.discoverGeneratedArmor();
         SetEffect.setup();
         Config.load();
