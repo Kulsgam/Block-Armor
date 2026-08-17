@@ -29,7 +29,7 @@ public class SetEffectCrafter extends SetEffect {
 	public void onArmorTick(Level world, Player player, ItemStack stack) {
 		super.onArmorTick(world, player, stack);
 
-		if (!world.isClientSide() && ArmorSet.getFirstSetItem(player, this) == stack && BlockArmor.key.isKeyDown(player)) {
+		if (!world.isClientSide() && ArmorSet.getFirstSetItem(player, this) == stack && BlockArmor.key.isKeyDown(player, this)) {
 			player.openMenu(new CrafterProvider());
 			this.damageArmor(player, 1, false);
 		}

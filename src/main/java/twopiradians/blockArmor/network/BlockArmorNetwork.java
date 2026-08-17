@@ -28,7 +28,10 @@ public final class BlockArmorNetwork {
         PayloadTypeRegistry.clientboundPlay().register(BlockArmorPayloads.CooldownSync.TYPE, BlockArmorPayloads.CooldownSync.CODEC);
         PayloadTypeRegistry.clientboundPlay().register(EffectBlacklistSyncPayload.TYPE, EffectBlacklistSyncPayload.CODEC);
         ServerPlayNetworking.registerGlobalReceiver(ActivateSetEffectPayload.TYPE,
-                (payload, context) -> context.server().execute(() -> BlockArmor.key.setKeyDown(context.player(), payload.pressed())));
+                (payload, context) -> context.server().execute(() -> {
+                    if (twopiradians.blockArmor.common.seteffect.SetEffect.isKnownId(payload.effectId()))
+                        BlockArmor.key.setKeyDown(context.player(), payload.effectId(), payload.pressed());
+                }));
         ServerPlayNetworking.registerGlobalReceiver(EffectBlacklistRequestPayload.TYPE,
                 (payload, context) -> context.server().execute(() -> sendEffectBlacklist(context.player())));
         ServerPlayNetworking.registerGlobalReceiver(EffectBlacklistTogglePayload.TYPE,

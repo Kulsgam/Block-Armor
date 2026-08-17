@@ -15,7 +15,7 @@ public final class KeyOpenEffectBlacklist {
     public static void register() {
         KeyMapping key = KeyMappingHelper.registerKeyMapping(new KeyMapping(
                 "key.blockarmor.open_effect_blacklist", InputConstants.UNKNOWN.getValue(),
-                KeyActivateSetEffect.CATEGORY));
+                KeySetEffectAbilities.CATEGORY));
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             if (client.player != null && key.consumeClick()) {
                 ClientPlayNetworking.send(new EffectBlacklistRequestPayload());

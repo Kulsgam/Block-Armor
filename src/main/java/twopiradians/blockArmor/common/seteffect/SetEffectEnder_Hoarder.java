@@ -27,7 +27,7 @@ public class SetEffectEnder_Hoarder extends SetEffect {
 	public void onArmorTick(Level world, Player player, ItemStack stack) {
 		super.onArmorTick(world, player, stack);
 
-		if (!world.isClientSide() && ArmorSet.getFirstSetItem(player, this) == stack && BlockArmor.key.isKeyDown(player)) {
+		if (!world.isClientSide() && ArmorSet.getFirstSetItem(player, this) == stack && BlockArmor.key.isKeyDown(player, this)) {
 			world.playSound(null, player.blockPosition(), SoundEvents.ENDER_CHEST_OPEN, 
 					SoundSource.PLAYERS, 0.5F, world.getRandom().nextFloat() * 0.1F + 0.9F);
 			if (!(player.containerMenu instanceof ChestMenu)) {

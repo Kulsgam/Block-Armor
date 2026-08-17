@@ -29,7 +29,7 @@ public class SetEffectPuller extends SetEffect {
 		super.onArmorTick(world, player, stack);
 
 		if (ArmorSet.getFirstSetItem(player, this) == stack &&
-				BlockArmor.key.isKeyDown(player) && !player.getCooldowns().isOnCooldown(stack)) {
+				BlockArmor.key.isKeyDown(player, this) && !player.getCooldowns().isOnCooldown(stack)) {
 			AABB aabb = player.getBoundingBox().inflate(10, 10, 10);
 			List<Entity> list = player.level().getEntities(player, aabb);
 			

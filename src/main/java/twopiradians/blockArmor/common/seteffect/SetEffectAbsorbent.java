@@ -64,7 +64,7 @@ public class SetEffectAbsorbent extends SetEffect {
 					}
 				}
 				else if (wornSet.block == Blocks.SPONGE &&
-						!world.isClientSide() && player.mayBuild() && BlockArmor.key.isKeyDown(player) &&
+						!world.isClientSide() && player.mayBuild() && BlockArmor.key.isKeyDown(player, this) &&
 						this.absorb(world, player.blockPosition(), player, stack)) {
 					world.playSound((Player)null, player.getX(), player.getY(), player.getZ(), SoundEvents.BUCKET_FILL, 
 							SoundSource.PLAYERS, 1.0F, world.getRandom().nextFloat() + 0.5f);

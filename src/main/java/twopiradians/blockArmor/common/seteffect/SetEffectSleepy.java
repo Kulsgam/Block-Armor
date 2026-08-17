@@ -24,7 +24,7 @@ public class SetEffectSleepy extends SetEffect {
 	public void onArmorTick(Level world, Player player, ItemStack stack) {
 		super.onArmorTick(world, player, stack);
 
-		if (!world.isClientSide() && BlockArmor.key.isKeyDown(player) && ArmorSet.getFirstSetItem(player, this) == stack &&
+		if (!world.isClientSide() && BlockArmor.key.isKeyDown(player, this) && ArmorSet.getFirstSetItem(player, this) == stack &&
 				!player.getCooldowns().isOnCooldown(stack)) {
 			// in nether - use explosive effect
 			if (player.level().dimensionType().hasFixedTime() || !player.level().dimensionType().hasSkyLight())

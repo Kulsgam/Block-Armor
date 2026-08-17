@@ -4,9 +4,7 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.entity.projectile.arrow.AbstractArrow;
 import net.minecraft.world.entity.projectile.arrow.Arrow;
-import net.minecraft.world.item.ArrowItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
@@ -27,12 +25,15 @@ public class SetEffectArrow_Defence extends SetEffect {
 		super.onArmorTick(world, player, stack);
 		
 		if (!world.isClientSide() && ArmorSet.getFirstSetItem(player, this) == stack &&
-				BlockArmor.key.isKeyDown(player) && !player.getCooldowns().isOnCooldown(stack)) {
+				BlockArmor.key.isKeyDown(player, this) && !player.getCooldowns().isOnCooldown(stack)) {
 			
 			int numArrows = 16;
 			for(int i = 0; i < numArrows; i++) {
-				ArrowItem itemArrow = (ArrowItem) Items.ARROW;
-				AbstractArrow entityArrow = itemArrow.createArrow(world, new ItemStack(itemArrow), player, ItemStack.EMPTY);
+				// Minecraft 26.1 requires a valid weapon stack when constructing an
+				// arrow.  ArrowItem#createArrow with an empty weapon stack throws
+				// "Invalid weapon firing an arrow"; use the direct constructor and
+				// identify the bow as the firing weapon instead.
+				Arrow entityArrow = new Arrow(world, player, new ItemStack(Items.ARROW), new ItemStack(Items.BOW));
 				entityArrow.shootFromRotation(player, 0.0F, player.getYRot() + i*(360/numArrows), 0.0F, 2.0F, 0.0F);
 				entityArrow.pickup = Arrow.Pickup.DISALLOWED;
 				world.addFreshEntity(entityArrow);

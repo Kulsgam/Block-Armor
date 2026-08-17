@@ -24,7 +24,7 @@ public class SetEffectTime_Control extends SetEffect {
 		super();
 		this.type = type;
 		this.color = ChatFormatting.LIGHT_PURPLE;
-		this.usesButton = true;
+		this.usesButton = false;
 	}
 	
 	@Override
@@ -49,7 +49,7 @@ public class SetEffectTime_Control extends SetEffect {
 	public void onArmorTick(Level world, Player player, ItemStack stack) {
 		super.onArmorTick(world, player, stack);
 
-		if (ArmorSet.getFirstSetItem(player, this) != stack || !BlockArmor.key.isKeyDown(player)) return;
+		if (ArmorSet.getFirstSetItem(player, this) != stack || !BlockArmor.key.isKeyDown(player, this)) return;
 		if (world.dimensionType().defaultClock().isEmpty()) return;
 		if (world.isClientSide()) return;
 		net.minecraft.server.level.ServerLevel server = (net.minecraft.server.level.ServerLevel) world;

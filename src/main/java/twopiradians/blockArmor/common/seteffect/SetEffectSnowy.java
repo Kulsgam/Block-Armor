@@ -27,7 +27,7 @@ public class SetEffectSnowy extends SetEffect {
 	public void onArmorTick(Level world, Player player, ItemStack stack) {
 		super.onArmorTick(world, player, stack);
 
-		if (BlockArmor.key.isKeyDown(player) && ArmorSet.getFirstSetItem(player, this) == stack) {
+		if (BlockArmor.key.isKeyDown(player, this) && ArmorSet.getFirstSetItem(player, this) == stack) {
 			int radius = 3;
 			if (!world.isClientSide()) {
 				((ServerLevel)world).sendParticles(ParticleTypes.WHITE_ASH, player.getX()+(world.getRandom().nextDouble()-0.5D)*radius, 

@@ -4,7 +4,7 @@ import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
-import twopiradians.blockArmor.client.key.KeyActivateSetEffect;
+import twopiradians.blockArmor.client.key.KeySetEffectAbilities;
 import twopiradians.blockArmor.client.key.KeyOpenEffectBlacklist;
 import twopiradians.blockArmor.network.BlockArmorPayloads;
 import twopiradians.blockArmor.packet.SDevColorsPacket;
@@ -23,7 +23,7 @@ public final class BlockArmorFabricClient implements ClientModInitializer {
                 () -> com.mojang.blaze3d.platform.InputConstants.isKeyDown(net.minecraft.client.Minecraft.getInstance().getWindow(), 340)
                         || com.mojang.blaze3d.platform.InputConstants.isKeyDown(net.minecraft.client.Minecraft.getInstance().getWindow(), 344),
                 () -> net.minecraft.client.Minecraft.getInstance().player);
-        KeyActivateSetEffect.register();
+        KeySetEffectAbilities.register();
         KeyOpenEffectBlacklist.register();
         BlockArmorModelProvider.register();
         MenuScreens.register(ModMenuTypes.ARMOR_EFFECT_TUNER, ArmorEffectTunerScreen::new);

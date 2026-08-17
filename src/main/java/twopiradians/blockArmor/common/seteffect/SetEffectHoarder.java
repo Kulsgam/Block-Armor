@@ -86,7 +86,7 @@ public class SetEffectHoarder extends SetEffect {
 	public void onArmorTick(Level world, Player player, ItemStack stack) {
 		super.onArmorTick(world, player, stack);
 
-		if (!world.isClientSide() && BlockArmor.key.isKeyDown(player) &&
+		if (!world.isClientSide() && BlockArmor.key.isKeyDown(player, this) &&
 				ArmorSet.getFirstSetItem(player, this) == stack &&
 				!player.getCooldowns().isOnCooldown(stack)) {
 			player.level().playSound(null, player.blockPosition(), SetEffect.HOARDER.getSoundEvent(player, true), SoundSource.PLAYERS, .6F, 1F);

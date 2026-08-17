@@ -22,7 +22,7 @@ public class SetEffectExplosive extends SetEffect {
 		super.onArmorTick(world, player, stack);
 
 		if (!world.isClientSide() && ArmorSet.getFirstSetItem(player, this) == stack &&
-				BlockArmor.key.isKeyDown(player) && !player.getCooldowns().isOnCooldown(stack)) 
+				BlockArmor.key.isKeyDown(player, this) && !player.getCooldowns().isOnCooldown(stack))
 			SetEffectExplosive.tryExplode(this, world, player);
 	}
 
