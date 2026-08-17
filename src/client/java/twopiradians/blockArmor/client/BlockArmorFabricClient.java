@@ -5,6 +5,7 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import twopiradians.blockArmor.client.key.KeyActivateSetEffect;
+import twopiradians.blockArmor.client.key.KeyOpenEffectBlacklist;
 import twopiradians.blockArmor.network.BlockArmorPayloads;
 import twopiradians.blockArmor.packet.SDevColorsPacket;
 import twopiradians.blockArmor.packet.SConfigSyncPacket;
@@ -23,6 +24,7 @@ public final class BlockArmorFabricClient implements ClientModInitializer {
                         || com.mojang.blaze3d.platform.InputConstants.isKeyDown(net.minecraft.client.Minecraft.getInstance().getWindow(), 344),
                 () -> net.minecraft.client.Minecraft.getInstance().player);
         KeyActivateSetEffect.register();
+        KeyOpenEffectBlacklist.register();
         BlockArmorModelProvider.register();
         MenuScreens.register(ModMenuTypes.ARMOR_EFFECT_TUNER, ArmorEffectTunerScreen::new);
         BlockArmorItemRenderer.register();
@@ -53,9 +55,19 @@ public final class BlockArmorFabricClient implements ClientModInitializer {
                                 new net.minecraft.network.FriendlyByteBuf(io.netty.buffer.Unpooled.wrappedBuffer(payload.bytes())));
                     });
                 });
+        ClientPlayNetworking.registerGlobalReceiver(twopiradians.blockArmor.network.EffectBlacklistSyncPayload.TYPE,
+                (payload, context) -> context.client().execute(() -> {
+                    if (context.client().player != null)
+                        twopiradians.blockArmor.common.effect.EffectBlacklist.setClient(
+                                context.client().player.getUUID(), new java.util.HashSet<>(payload.disabled()));
+                }));
         // Server sync is temporary client state. Restore this installation's local
         // configuration after leaving a dedicated server.
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> ConfigReload.restore(client));
+        ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
+            if (client.player != null)
+                twopiradians.blockArmor.common.effect.EffectBlacklist.clearClient(client.player.getUUID());
+        });
         ClientProxy.setup();
     }
 

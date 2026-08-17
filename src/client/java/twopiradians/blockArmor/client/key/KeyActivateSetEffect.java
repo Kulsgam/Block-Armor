@@ -13,10 +13,12 @@ import twopiradians.blockArmor.network.ActivateSetEffectPayload;
 /** Client key state mirrored to the server only when it changes. */
 public final class KeyActivateSetEffect {
     public static KeyMapping ACTIVATE_SET_EFFECT;
+    public static final KeyMapping.Category CATEGORY = KeyMapping.Category.register(
+            net.minecraft.resources.Identifier.fromNamespaceAndPath(BlockArmor.MODID, "blockarmor"));
     public static void register() {
         ACTIVATE_SET_EFFECT = KeyMappingHelper.registerKeyMapping(
                 new KeyMapping("key.blockarmor.activate_set_effect", 82,
-                        KeyMapping.Category.register(net.minecraft.resources.Identifier.fromNamespaceAndPath(BlockArmor.MODID, "blockarmor"))));
+                        CATEGORY));
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             if (client.player == null) return;
             UUID id = client.player.getUUID();

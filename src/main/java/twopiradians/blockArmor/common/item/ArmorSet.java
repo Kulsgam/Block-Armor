@@ -49,6 +49,7 @@ import net.minecraft.world.phys.shapes.Shapes;
 import twopiradians.blockArmor.common.BlockArmor;
 import twopiradians.blockArmor.common.command.CommandDev;
 import twopiradians.blockArmor.common.config.Config;
+import twopiradians.blockArmor.common.effect.EffectBlacklist;
 import twopiradians.blockArmor.common.seteffect.SetEffect;
 import twopiradians.blockArmor.utils.BlockUtils;
 
@@ -795,6 +796,12 @@ public class ArmorSet {
 		}
 	}
 
+	/** Rebuild one player's active effects after a blacklist change. */
+	public static void refreshPlayerSetEffects(Player player) {
+		if (player == null) return;
+		updateWornSetEffects(getPlayerSetEffects(player.level().isClientSide()), java.util.List.of(player));
+	}
+
 	/**Update player set effects each tick for efficiency and onStart and onStop*/
 	private static void updateWornSetEffects(HashMap<UUID, HashSet<SetEffect>> playerSetEffects, 
 			List<? extends Player> onlinePlayers) {
@@ -838,7 +845,7 @@ public class ArmorSet {
 				if (stack != null && stack.getItem() instanceof BlockArmorItem) {
 					worn.add(stack);
 					for (SetEffect effect : CombinedArmorData.enabledEffects(stack)) {
-						if (effect.isEnabled()) {
+						if (effect.isEnabled() && !EffectBlacklist.isDisabled(entity, effect)) {
 							int count = 1;
 							if (setCounts.containsKey(effect))
 								count += setCounts.get(effect);
@@ -858,11 +865,12 @@ public class ArmorSet {
 			for (ItemStack combined : worn) {
 				if (!CombinedArmorData.isCombined(combined)) continue;
 				for (SetEffect carried : CombinedArmorData.enabledEffects(combined)) {
-					if (!carried.isEnabled()) continue;
+					if (!carried.isEnabled() || EffectBlacklist.isDisabled(entity, carried)) continue;
 					int matchingPieces = 0;
 					for (ItemStack candidate : worn) {
 						boolean matches = CombinedArmorData.enabledEffects(candidate).stream()
-								.anyMatch(effect -> effect.isEnabled() && effect.getClass() == carried.getClass());
+								.anyMatch(effect -> effect.isEnabled() && !EffectBlacklist.isDisabled(entity, effect)
+										&& effect.getClass() == carried.getClass());
 						if (matches) matchingPieces++;
 					}
 					if (matchingPieces >= Config.piecesForSet) {

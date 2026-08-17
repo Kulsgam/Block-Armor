@@ -2,6 +2,7 @@ package twopiradians.blockArmor.client.gui;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.time.Duration;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
@@ -81,6 +82,7 @@ public final class ArmorEffectTunerScreen extends AbstractContainerScreen<ArmorE
             button.setMessage(Component.translatable("setEffect." + effect.name.replace(" ", "_").toLowerCase() + ".name")
                     .withStyle(enabled ? ChatFormatting.GREEN : ChatFormatting.RED));
             button.setTooltip(Tooltip.create(effect.getDescription()));
+            button.setTooltipDelay(Duration.ZERO);
         }
         previous.visible = next.visible = pages > 1;
         previous.active = page > 0;

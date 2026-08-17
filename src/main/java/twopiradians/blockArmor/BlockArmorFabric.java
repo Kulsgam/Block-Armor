@@ -58,6 +58,7 @@ public final class BlockArmorFabric implements ModInitializer {
                     CommonProxy.onPlayerJoin(handler.player);
 					ArmorSet.onLogin(handler.player);
                     SetEffectHealth_Boost.onLogin(handler.player);
+                    BlockArmor.NETWORK.sendEffectBlacklist(handler.player);
                 });
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
             ArmorSet.onLogout(handler.player);

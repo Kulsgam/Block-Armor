@@ -45,6 +45,11 @@ import twopiradians.blockArmor.common.item.ArmorSet;
 import twopiradians.blockArmor.common.item.BlockArmorItem;
 
 public class SetEffect {
+	/** Stable blacklist identity shared by all instances of an effect type. */
+	public static String id(SetEffect effect) { return effect.getClass().getName(); }
+	public static boolean isKnownId(String id) {
+		return SET_EFFECTS.stream().anyMatch(effect -> id(effect).equals(id));
+	}
 
 	public static final Identifier ATTACK_SPEED_UUID = Identifier.fromNamespaceAndPath(BlockArmor.MODID, "set_effect/attack_speed");
 	public static final Identifier ATTACK_DAMAGE_UUID = Identifier.fromNamespaceAndPath(BlockArmor.MODID, "set_effect/attack_damage");
